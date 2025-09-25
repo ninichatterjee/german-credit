@@ -1,0 +1,22 @@
+# dependencies
+ucimlrepo==0.0.7
+pandas>=2.0.0
+numpy>=1.24.0
+certifi>=2020.12.5
+python>=3.12.0
+
+# create and activate virtual environment
+
+# run the following commands:
+python -m venv venv
+
+source venv/bin/activate
+
+# install dependencies
+pip install -r requirements.txt
+
+# run the dataset import script
+python data/ImportDS.py
+
+# to deactivate virtual environment
+deactivate
