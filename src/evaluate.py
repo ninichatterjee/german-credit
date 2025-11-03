@@ -7,7 +7,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
-from sklearn.linear_model import LogisticRegression, Ridge
+from sklearn.linear_model import LogisticRegression, LinearRegression
 
 from data import load_raw_data, split_data_classification, split_data_regression
 from features import preprocess_for_linear_models
@@ -16,27 +16,18 @@ from features import preprocess_for_linear_models
 def plot_correlation_heatmap(X, y, headers, save_path='reports/plots_midpointsub/correlation_heatmap.png'):
     """
     Plot correlation heatmap for key numeric features.
-    
-    Args:
-        X (np.ndarray): Feature matrix
-        y (np.ndarray): Target variable
-        headers (list): Feature names
-        save_path (str): Path to save the plot
     """
-    # Create DataFrame with feature names 
+    # Creating DataFrames
     feature_headers = [h for h in headers if h != 'class']
     df = pd.DataFrame(X, columns=feature_headers)
     df['Target'] = y
     
     # All features in this dataset are numeric after encoding
-    # Select key numeric features based on domain knowledge
-    # Attributes: 2 (Duration), 5 (Credit amount), 8 (Installment rate), 
-    #             11 (Present residence), 13 (Age), 16 (Number of credits), 18 (Number of dependents)
-    numeric_feature_indices = [1, 4, 7, 10, 12, 15, 17]  # 0-indexed
+    numeric_feature_indices = [1, 4, 7, 10, 12, 15, 17]
     numeric_feature_names = [headers[i] for i in numeric_feature_indices]
-    
     numeric_df = df[numeric_feature_names + ['Target']]
     
+    # Computing correlation matrix
     correlation_matrix = numeric_df.corr()
     
     plt.figure(figsize=(12, 10))
@@ -71,12 +62,6 @@ def plot_correlation_heatmap(X, y, headers, save_path='reports/plots_midpointsub
 def plot_boxplot_summary(X, y, headers, save_path='reports/plots_midpointsub/boxplot_summary.png'):
     """
     Plot boxplot summary for key numeric features, grouped by target.
-    
-    Args:
-        X (np.ndarray): Feature matrix
-        y (np.ndarray): Target variable
-        headers (list): Feature names
-        save_path (str): Path to save the plot
     """
     feature_headers = [h for h in headers if h != 'class']
     df = pd.DataFrame(X, columns=feature_headers)
@@ -136,16 +121,10 @@ def plot_boxplot_summary(X, y, headers, save_path='reports/plots_midpointsub/box
 def plot_confusion_matrix(save_path='reports/plots_midpointsub/confusion_matrix.png'):
     """
     Plot confusion matrix for the best classification model (Logistic Regression) on test set.
-    
-    Args:
-        save_path (str): Path to save the plot
     """
-    
-    # Load and split data
     X, y, headers = load_raw_data()
     X_train, X_val, X_test, y_train, y_val, y_test = split_data_classification(X, y)
     
-    # Preprocess
     X_train_prep, X_val_prep, X_test_prep, prep = preprocess_for_linear_models(
         X_train, X_val, X_test
     )
@@ -156,6 +135,7 @@ def plot_confusion_matrix(save_path='reports/plots_midpointsub/confusion_matrix.
         penalty='l1',
         solver='liblinear',
         max_iter=1000,
+        class_weight='balanced',  # Handle class imbalance
         random_state=42
     )
     model.fit(X_train_prep, y_train)
@@ -166,7 +146,14 @@ def plot_confusion_matrix(save_path='reports/plots_midpointsub/confusion_matrix.
     # Compute confusion matrix
     cm = confusion_matrix(y_test, y_test_pred)
     
-    fig, ax = plt.subplots(figsize=(10, 8))
+    from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+    
+    accuracy = accuracy_score(y_test, y_test_pred)
+    precision = precision_score(y_test, y_test_pred, pos_label=2)
+    recall = recall_score(y_test, y_test_pred, pos_label=2)
+    f1 = f1_score(y_test, y_test_pred, average='weighted')
+    
+    fig, ax = plt.subplots(figsize=(14, 8))
     
     # Create confusion matrix display
     disp = ConfusionMatrixDisplay(
@@ -184,30 +171,27 @@ def plot_confusion_matrix(save_path='reports/plots_midpointsub/confusion_matrix.
     # Customize plot
     ax.set_title('Confusion Matrix - Logistic Regression (Test Set)', 
                  fontsize=16, fontweight='bold', pad=20)
-    ax.set_xlabel('Predicted Label', fontsize=12, fontweight='bold')
-    ax.set_ylabel('True Label', fontsize=12, fontweight='bold')
+    ax.set_xlabel('Predicted Label', fontsize=13, fontweight='bold', labelpad=10)
+    ax.set_ylabel('True Label', fontsize=13, fontweight='bold', labelpad=10)
     
-    # Add performance metrics as text
-    from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
-    
-    accuracy = accuracy_score(y_test, y_test_pred)
-    precision = precision_score(y_test, y_test_pred, pos_label=2)
-    recall = recall_score(y_test, y_test_pred, pos_label=2)
-    f1 = f1_score(y_test, y_test_pred, average='weighted')
-    
-    metrics_text = f'Test Set Performance:\\n'
-    metrics_text += f'Accuracy:  {accuracy:.4f}\\n'
-    metrics_text += f'Precision: {precision:.4f}\\n'
-    metrics_text += f'Recall:    {recall:.4f}\\n'
+    # Add performance metrics as text box (positioned to the right)
+    metrics_text = 'Test Set Performance:\n\n'
+    metrics_text += f'Accuracy:  {accuracy:.4f}\n'
+    metrics_text += f'Precision: {precision:.4f}\n'
+    metrics_text += f'Recall:    {recall:.4f}\n'
     metrics_text += f'F1-Score:  {f1:.4f}'
     
-    ax.text(1.15, 0.5, metrics_text,
+    # Position text box to the right with proper spacing
+    ax.text(1.35, 0.5, metrics_text,
             transform=ax.transAxes,
-            fontsize=11,
+            fontsize=12,
             verticalalignment='center',
-            bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
+            horizontalalignment='left',
+            bbox=dict(boxstyle='round,pad=1', facecolor='lightblue', 
+                     edgecolor='black', alpha=0.8, linewidth=2))
     
-    plt.tight_layout()
+    # Adjust layout to prevent overlap
+    plt.subplots_adjust(right=0.75)
     
     plt.savefig(save_path, dpi=300, bbox_inches='tight')
     plt.close()
@@ -218,10 +202,7 @@ def plot_confusion_matrix(save_path='reports/plots_midpointsub/confusion_matrix.
 
 def plot_residuals(save_path='reports/plots_midpointsub/residuals_plot.png'):
     """
-    Plot residuals vs predicted and residual histogram for the best regression model (Ridge) on test set.
-    
-    Args:
-        save_path (str): Path to save the plot
+    Plot residuals vs predicted and residual histogram for the best regression model (Linear Regression) on test set.
     """
     
     # Load and split data
@@ -233,8 +214,8 @@ def plot_residuals(save_path='reports/plots_midpointsub/residuals_plot.png'):
         X_train, X_val, X_test
     )
     
-    # Train best model (Ridge Regression with optimized parameters)
-    model = Ridge(alpha=10.0, random_state=42)
+    # Train best model (Linear Regression)
+    model = LinearRegression()
     model.fit(X_train_prep, y_train)
     
     # Predict on test set
@@ -283,7 +264,7 @@ def plot_residuals(save_path='reports/plots_midpointsub/residuals_plot.png'):
     ax2_twin.legend(loc='upper right')
     
     # Overall title
-    fig.suptitle('Residual Analysis - Ridge Regression (Test Set)', 
+    fig.suptitle('Residual Analysis - Linear Regression (Test Set)', 
                  fontsize=16, fontweight='bold', y=1.02)
     
     plt.tight_layout()
@@ -293,17 +274,15 @@ def plot_residuals(save_path='reports/plots_midpointsub/residuals_plot.png'):
     print(f"Residuals plot saved to {save_path}")
     
     # Calculate metrics
-    from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+    from sklearn.metrics import mean_squared_error, mean_absolute_error
     
     mae = mean_absolute_error(y_test, y_test_pred)
     rmse = np.sqrt(mean_squared_error(y_test, y_test_pred))
-    r2 = r2_score(y_test, y_test_pred)
     
-    return residuals, mae, rmse, r2
+    return residuals, mae, rmse
 
 
 if __name__ == "__main__":
-    # Load data
     X, y, headers = load_raw_data()
     print(f"\nLoaded data: {X.shape[0]} samples, {X.shape[1]} features")
     
@@ -318,6 +297,6 @@ if __name__ == "__main__":
     print("\nPlot saved to:")
     print("  - reports/plots_midpointsub/confusion_matrix.png")
     
-    residuals, mae, rmse, r2 = plot_residuals()
+    residuals, mae, rmse = plot_residuals()
     print("\nPlot saved to:")
     print("  - reports/plots_midpointsub/residuals_plot.png")

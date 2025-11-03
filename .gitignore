@@ -205,3 +205,15 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# MLflow
+# Ignore all experiment tracking data, models, and artifacts
+mlruns/
+mlartifacts/
+mlflow.db
+mlflow.db-shm
+mlflow.db-wal
+.mlflow/
+
+# MLflow UI server files
+.mlflow.pid
