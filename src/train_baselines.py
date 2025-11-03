@@ -17,24 +17,19 @@ from features import preprocess_for_linear_models, preprocess_for_decision_trees
 
 RANDOM_SEED = 42
 
-# Set MLflow experiment
 mlflow.set_experiment("german-credit-baseline-models")
-
 
 def train_classifiers(X_train, X_val, X_test, y_train, y_val, y_test):
     """
     Train and evaluate classification models: Logistic Regression and Decision Tree.
     """
     results = {}
-    
-    print("Training Logistic Regression...")
+
     X_train_lr, X_val_lr, X_test_lr, prep_lr = preprocess_for_linear_models(
         X_train, X_val, X_test
     )
     
-    # MLflow tracking for Logistic Regression
     with mlflow.start_run(run_name="Logistic_Regression"):
-        # Log parameters
         params = {
             'C': 1.0,
             'penalty': 'l1',
@@ -55,7 +50,6 @@ def train_classifiers(X_train, X_val, X_test, y_train, y_val, y_test):
         y_test_pred_lr = lr_model.predict(X_test_lr)
         y_test_proba_lr = lr_model.predict_proba(X_test_lr)
         
-        # Calculate metrics
         val_accuracy = accuracy_score(y_val, y_val_pred_lr)
         val_f1 = f1_score(y_val, y_val_pred_lr, average='weighted')
         val_roc_auc = roc_auc_score(y_val, y_val_proba_lr[:, 1])
@@ -63,7 +57,6 @@ def train_classifiers(X_train, X_val, X_test, y_train, y_val, y_test):
         test_f1 = f1_score(y_test, y_test_pred_lr, average='weighted')
         test_roc_auc = roc_auc_score(y_test, y_test_proba_lr[:, 1])
         
-        # Log metrics
         mlflow.log_metric('val_accuracy', val_accuracy)
         mlflow.log_metric('val_f1_score', val_f1)
         mlflow.log_metric('val_roc_auc', val_roc_auc)
@@ -71,7 +64,6 @@ def train_classifiers(X_train, X_val, X_test, y_train, y_val, y_test):
         mlflow.log_metric('test_f1_score', test_f1)
         mlflow.log_metric('test_roc_auc', test_roc_auc)
         
-        # Log model
         mlflow.sklearn.log_model(lr_model, "model")
         
         results['logistic_regression'] = {
@@ -87,14 +79,11 @@ def train_classifiers(X_train, X_val, X_test, y_train, y_val, y_test):
     
     print(f"  Test Accuracy: {results['logistic_regression']['test_accuracy']:.4f}")
     
-    print("Training Decision Tree Classifier...")
     X_train_dt, X_val_dt, X_test_dt, prep_dt = preprocess_for_decision_trees(
         X_train, X_val, X_test
     )
     
-    # MLflow tracking for Decision Tree Classifier
     with mlflow.start_run(run_name="Decision_Tree_Classifier"):
-        # Log parameters
         params = {
             'max_depth': 5,
             'min_samples_split': 100,
@@ -119,7 +108,6 @@ def train_classifiers(X_train, X_val, X_test, y_train, y_val, y_test):
         y_test_pred_dt = dt_model.predict(X_test_dt)
         y_test_proba_dt = dt_model.predict_proba(X_test_dt)
         
-        # Calculate metrics
         val_accuracy = accuracy_score(y_val, y_val_pred_dt)
         val_f1 = f1_score(y_val, y_val_pred_dt, average='weighted')
         val_roc_auc = roc_auc_score(y_val, y_val_proba_dt[:, 1])
@@ -127,7 +115,6 @@ def train_classifiers(X_train, X_val, X_test, y_train, y_val, y_test):
         test_f1 = f1_score(y_test, y_test_pred_dt, average='weighted')
         test_roc_auc = roc_auc_score(y_test, y_test_proba_dt[:, 1])
         
-        # Log metrics
         mlflow.log_metric('val_accuracy', val_accuracy)
         mlflow.log_metric('val_f1_score', val_f1)
         mlflow.log_metric('val_roc_auc', val_roc_auc)
@@ -135,7 +122,6 @@ def train_classifiers(X_train, X_val, X_test, y_train, y_val, y_test):
         mlflow.log_metric('test_f1_score', test_f1)
         mlflow.log_metric('test_roc_auc', test_roc_auc)
         
-        # Log model
         mlflow.sklearn.log_model(dt_model, "model")
         
         results['decision_tree_classifier'] = {
@@ -159,15 +145,12 @@ def train_regressors(X_train, X_val, X_test, y_train, y_val, y_test):
     Train and evaluate regression models: Linear Regression and Decision Tree Regressor.
     """
     results = {}
-    
-    print("Training Linear Regression...")
+
     X_train_lr, X_val_lr, X_test_lr, prep_lr = preprocess_for_linear_models(
         X_train, X_val, X_test
     )
     
-    # MLflow tracking for Linear Regression
     with mlflow.start_run(run_name="Linear_Regression"):
-        # Log parameters
         mlflow.log_param('model_type', 'regression')
         mlflow.log_param('preprocessing', 'one_hot_encoding + scaling')
         mlflow.log_param('fit_intercept', True)
@@ -178,19 +161,16 @@ def train_regressors(X_train, X_val, X_test, y_train, y_val, y_test):
         y_val_pred_lr = lr_model.predict(X_val_lr)
         y_test_pred_lr = lr_model.predict(X_test_lr)
         
-        # Calculate metrics
         val_mae = mean_absolute_error(y_val, y_val_pred_lr)
         val_rmse = np.sqrt(mean_squared_error(y_val, y_val_pred_lr))
         test_mae = mean_absolute_error(y_test, y_test_pred_lr)
         test_rmse = np.sqrt(mean_squared_error(y_test, y_test_pred_lr))
         
-        # Log metrics
         mlflow.log_metric('val_mae', val_mae)
         mlflow.log_metric('val_rmse', val_rmse)
         mlflow.log_metric('test_mae', test_mae)
         mlflow.log_metric('test_rmse', test_rmse)
         
-        # Log model
         mlflow.sklearn.log_model(lr_model, "model")
         
         results['linear_regression'] = {
@@ -204,14 +184,11 @@ def train_regressors(X_train, X_val, X_test, y_train, y_val, y_test):
     
     print(f"  Test RMSE: {results['linear_regression']['test_rmse']:.4f}")
     
-    print("Training Decision Tree Regressor...")
     X_train_dt, X_val_dt, X_test_dt, prep_dt = preprocess_for_decision_trees(
         X_train, X_val, X_test
     )
     
-    # MLflow tracking for Decision Tree Regressor
     with mlflow.start_run(run_name="Decision_Tree_Regressor"):
-        # Log parameters
         params = {
             'max_depth': 5,
             'min_samples_split': 50,
@@ -228,19 +205,16 @@ def train_regressors(X_train, X_val, X_test, y_train, y_val, y_test):
         y_val_pred_dt = dt_model.predict(X_val_dt)
         y_test_pred_dt = dt_model.predict(X_test_dt)
         
-        # Calculate metrics
         val_mae = mean_absolute_error(y_val, y_val_pred_dt)
         val_rmse = np.sqrt(mean_squared_error(y_val, y_val_pred_dt))
         test_mae = mean_absolute_error(y_test, y_test_pred_dt)
         test_rmse = np.sqrt(mean_squared_error(y_test, y_test_pred_dt))
         
-        # Log metrics
         mlflow.log_metric('val_mae', val_mae)
         mlflow.log_metric('val_rmse', val_rmse)
         mlflow.log_metric('test_mae', test_mae)
         mlflow.log_metric('test_rmse', test_rmse)
         
-        # Log model
         mlflow.sklearn.log_model(dt_model, "model")
         
         results['decision_tree_regressor'] = {

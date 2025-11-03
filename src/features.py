@@ -14,38 +14,6 @@ CATEGORICAL_INDICES = [0, 2, 3, 5, 6, 8, 9, 11, 13, 14, 16, 18, 19]
 # Attributes: Duration (months), Credit amount, Age (years), Installment rate (percentage of disposable income), Present residence (years), Number of credits at bank, Number of people being liable
 NUMERICAL_INDICES = [1, 4, 7, 10, 12, 15, 17]
 
-
-def handle_class_imbalance(X, y):
-    """
-    Handles class imbalance via undersampling majority class.
-    """
-    # Separate majority and minority classes
-    # Class 1 (Good credit) = 700 samples, Class 2 (Bad credit) = 300 samples
-    idx_class_1 = np.where(y == 1)[0]  # Majority class
-    idx_class_2 = np.where(y == 2)[0]  # Minority class
-    
-    # Undersample majority class to match minority class
-    np.random.seed(RANDOM_SEED)
-    idx_class_1_downsampled = np.random.choice(
-        idx_class_1, 
-        size=len(idx_class_2), 
-        replace=False
-    )
-    
-    # Combine indices
-    balanced_indices = np.concatenate([idx_class_1_downsampled, idx_class_2])
-    
-    # Shuffle indices
-    np.random.seed(RANDOM_SEED)
-    np.random.shuffle(balanced_indices)
-    
-    # Return balanced data
-    X_clean = X[balanced_indices]
-    y_clean = y[balanced_indices]
-    
-    return X_clean, y_clean
-
-
 def encode_categorical_features(X_train, X_val, X_test):
     """
     Encode categorical features using LabelEncoder.
@@ -57,22 +25,17 @@ def encode_categorical_features(X_train, X_val, X_test):
     
     encoders = {}
     
-    # Converting numerical columns to float (they're currently strings)
     for idx in NUMERICAL_INDICES:
         X_train_enc[:, idx] = X_train_enc[:, idx].astype(float)
         X_val_enc[:, idx] = X_val_enc[:, idx].astype(float)
         X_test_enc[:, idx] = X_test_enc[:, idx].astype(float)
     
-    # Encoding categorical columns
     for idx in CATEGORICAL_INDICES:
         encoder = LabelEncoder()
         
-        # Fitting on training data
         X_train_enc[:, idx] = encoder.fit_transform(X_train[:, idx])
         
-        # Transform validation and test, handling unseen labels
         for X_set, X_enc_set in [(X_val, X_val_enc), (X_test, X_test_enc)]:
-            # Handle unseen labels by mapping them to a new category
             labels = X_set[:, idx]
             encoded = np.zeros(len(labels), dtype=int)
             
@@ -80,7 +43,6 @@ def encode_categorical_features(X_train, X_val, X_test):
                 if label in encoder.classes_:
                     encoded[i] = encoder.transform([label])[0]
                 else:
-                    # Assign to the most frequent class (0 after encoding)
                     encoded[i] = 0
             
             X_enc_set[:, idx] = encoded
@@ -99,7 +61,6 @@ def preprocess_for_decision_trees(X_train, X_val, X_test):
     Preprocess features for Decision Tree models (Classifier and Regressor).
     Decision trees only need categorical encoding, no scaling required.
     """
-    # encoding categorical features
     X_train_prep, X_val_prep, X_test_prep, encoders = encode_categorical_features(
         X_train, X_val, X_test
     )
@@ -117,30 +78,24 @@ def preprocess_for_linear_models(X_train, X_val, X_test):
     Preprocess features for Linear models (Logistic Regression and Linear Regression).
     Uses one-hot encoding for categorical features and scaling for numerical features.
     """
-    # Extract numerical features and convert to float
     X_train_num = X_train[:, NUMERICAL_INDICES].astype(float)
     X_val_num = X_val[:, NUMERICAL_INDICES].astype(float)
     X_test_num = X_test[:, NUMERICAL_INDICES].astype(float)
     
-    # Extract categorical features
     X_train_cat = X_train[:, CATEGORICAL_INDICES]
     X_val_cat = X_val[:, CATEGORICAL_INDICES]
     X_test_cat = X_test[:, CATEGORICAL_INDICES]
     
-    # One-hot encode categorical features
-    # drop='first' removes one category per feature to avoid multicollinearity
     onehot_encoder = OneHotEncoder(sparse_output=False, handle_unknown='ignore', drop='first')
     X_train_cat_encoded = onehot_encoder.fit_transform(X_train_cat)
     X_val_cat_encoded = onehot_encoder.transform(X_val_cat)
     X_test_cat_encoded = onehot_encoder.transform(X_test_cat)
     
-    # Scale numerical features
     scaler = StandardScaler()
     X_train_num_scaled = scaler.fit_transform(X_train_num)
     X_val_num_scaled = scaler.transform(X_val_num)
     X_test_num_scaled = scaler.transform(X_test_num)
     
-    # Combine numerical and categorical features
     X_train_prep = np.hstack([X_train_num_scaled, X_train_cat_encoded])
     X_val_prep = np.hstack([X_val_num_scaled, X_val_cat_encoded])
     X_test_prep = np.hstack([X_test_num_scaled, X_test_cat_encoded])
@@ -155,8 +110,6 @@ def preprocess_for_linear_models(X_train, X_val, X_test):
 
 if __name__ == "__main__":
     from data import load_raw_data, split_data_classification
-    
-    print("Testing feature preprocessing pipeline...")
     
     X, y, headers = load_raw_data()
     print(f"Loaded data: X shape {X.shape}, y shape {y.shape}")

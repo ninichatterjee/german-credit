@@ -26,24 +26,20 @@ def tune_decision_tree_regressor(X_train, X_val, X_test, y_train, y_val, y_test)
         X_train, X_val, X_test
     )
     
-    # Define hyperparameter ranges to test
     max_depth_values = list(range(2, 10)) 
     min_samples_split_values = list(range(90, 110))
     min_samples_leaf_values = list(range(1, 12))
-    ccp_alpha_values = [round(0.00025 + i * 0.0001, 5) for i in range(6)]  # 0.00025 to 0.00075 with 0.0001 increment
+    ccp_alpha_values = [round(0.00025 + i * 0.0001, 5) for i in range(6)]
     
     results = []
 
-    print(f"\nTesting {len(max_depth_values)} max_depth values (2 to 9)...")
     print(f"Testing {len(min_samples_split_values)} min_samples_split values (90 to 109)...")
     print(f"Testing {len(min_samples_leaf_values)} min_samples_leaf values (15 to 24)...")
     print(f"Testing {len(ccp_alpha_values)} ccp_alpha values (0.00025 to 0.00075)...")
     total_combinations = (len(max_depth_values) * len(min_samples_split_values) * 
                          len(min_samples_leaf_values) * len(ccp_alpha_values))
     print(f"Total combinations: {total_combinations}")
-    print("\nThis may take several minutes...\n")
-    
-    # Test all combinations
+
     current = 0
     
     for max_depth in max_depth_values:
@@ -52,7 +48,6 @@ def tune_decision_tree_regressor(X_train, X_val, X_test, y_train, y_val, y_test)
                 for ccp_alpha in ccp_alpha_values:
                     current += 1
                     
-                    # Train model with current hyperparameters
                     model = DecisionTreeRegressor(
                         max_depth=max_depth,
                         min_samples_split=min_samples_split,
@@ -63,21 +58,18 @@ def tune_decision_tree_regressor(X_train, X_val, X_test, y_train, y_val, y_test)
                 
                     model.fit(X_train_prep, y_train)
                     
-                    # Evaluate on validation set
                     y_val_pred = model.predict(X_val_prep)
                     
                     val_mae = mean_absolute_error(y_val, y_val_pred)
                     val_rmse = np.sqrt(mean_squared_error(y_val, y_val_pred))
                     val_r2 = r2_score(y_val, y_val_pred)
                     
-                    # Evaluate on test set
                     y_test_pred = model.predict(X_test_prep)
                     
                     test_mae = mean_absolute_error(y_test, y_test_pred)
                     test_rmse = np.sqrt(mean_squared_error(y_test, y_test_pred))
                     test_r2 = r2_score(y_test, y_test_pred)
                     
-                    # Store results
                     results.append({
                         'max_depth': max_depth,
                         'min_samples_split': min_samples_split,
@@ -91,14 +83,11 @@ def tune_decision_tree_regressor(X_train, X_val, X_test, y_train, y_val, y_test)
                         'test_r2': test_r2
                     })
                     
-                    # Progress update every 20 combinations
                     if current % 20 == 0:
                         print(f"Progress: {current}/{total_combinations} combinations tested...")
     
-    # Convert to DataFrame
     results_df = pd.DataFrame(results)
     
-    # Find best parameters based on validation RMSE (lower is better)
     best_idx = results_df['val_rmse'].idxmin()
     best_params = {
         'max_depth': int(results_df.loc[best_idx, 'max_depth']),
@@ -120,8 +109,6 @@ def tune_decision_tree_regressor(X_train, X_val, X_test, y_train, y_val, y_test)
     print(f"  RMSE: {best_val_rmse:.4f}")
     print(f"  R²:   {best_val_r2:.4f}")
     
-    # Train final model with best parameters
-    print("\nTraining final model with best parameters on test set...")
     best_model = DecisionTreeRegressor(
         max_depth=best_params['max_depth'],
         min_samples_split=best_params['min_samples_split'],
@@ -131,7 +118,6 @@ def tune_decision_tree_regressor(X_train, X_val, X_test, y_train, y_val, y_test)
     )
     best_model.fit(X_train_prep, y_train)
     
-    # Evaluate on test set
     y_test_pred = best_model.predict(X_test_prep)
     
     test_mae = mean_absolute_error(y_test, y_test_pred)
@@ -143,11 +129,9 @@ def tune_decision_tree_regressor(X_train, X_val, X_test, y_train, y_val, y_test)
     print(f"  RMSE: {test_rmse:.4f}")
     print(f"  R²:   {test_r2:.4f}")
     
-    # Save detailed results
     results_df.to_csv('reports/tables_midpointsub/decision_tree_regressor_tuning.csv', index=False)
     print(f"\nDetailed results saved to reports/tables_midpointsub/decision_tree_regressor_tuning.csv")
     
-    # Save best parameters
     best_params_df = pd.DataFrame([{
         'max_depth': best_params['max_depth'],
         'min_samples_split': best_params['min_samples_split'],
@@ -198,12 +182,10 @@ if __name__ == "__main__":
     X_train, X_val, X_test, y_train, y_val, y_test = split_data_regression(X, y)
     print(f"Split data: Train={X_train.shape[0]}, Val={X_val.shape[0]}, Test={X_test.shape[0]}\n")
     
-    # Run hyperparameter tuning
     best_params, results_df, best_model = tune_decision_tree_regressor(
         X_train, X_val, X_test, y_train, y_val, y_test
     )
     
-    # Analyze impact of each hyperparameter
     analyze_hyperparameter_impact(results_df)
     
     print("\nBaseline (default parameters): Test RMSE = 0.5477, Test MAE = 0.3000")

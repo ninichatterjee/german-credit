@@ -36,7 +36,6 @@ def tune_decision_tree_classifier(X_train, X_val, X_test, y_train, y_val, y_test
     
     results = []
     
-    print(f"\nTesting {len(max_depth_values)} max_depth values...")
     print(f"Testing {len(min_samples_split_values)} min_samples_split values...")
     print(f"Testing {len(min_samples_leaf_values)} min_samples_leaf values...")
     print(f"Testing {len(class_weight_values)} class_weight values...")
@@ -46,7 +45,6 @@ def tune_decision_tree_classifier(X_train, X_val, X_test, y_train, y_val, y_test
                          len(min_samples_leaf_values) * len(class_weight_values) * 
                          len(splitter_values) * len(max_features_values))
     print(f"Total combinations: {total_combinations}")
-    print("\nThis may take 10-15 minutes...\n")
     
     # Test all combinations
     current = 0
@@ -126,7 +124,6 @@ def tune_decision_tree_classifier(X_train, X_val, X_test, y_train, y_val, y_test
     print(f"  F1-Score: {best_val_f1:.4f}")
     print(f"  ROC-AUC:  {best_val_roc_auc:.4f}")
     
-    print("\nTraining final model with best parameters on test set...")
     best_model = DecisionTreeClassifier(
         max_depth=best_params['max_depth'],
         min_samples_split=best_params['min_samples_split'],

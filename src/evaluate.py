@@ -17,17 +17,14 @@ def plot_correlation_heatmap(X, y, headers, save_path='reports/plots_midpointsub
     """
     Plot correlation heatmap for key numeric features.
     """
-    # Creating DataFrames
     feature_headers = [h for h in headers if h != 'class']
     df = pd.DataFrame(X, columns=feature_headers)
     df['Target'] = y
     
-    # All features in this dataset are numeric after encoding
     numeric_feature_indices = [1, 4, 7, 10, 12, 15, 17]
     numeric_feature_names = [headers[i] for i in numeric_feature_indices]
     numeric_df = df[numeric_feature_names + ['Target']]
     
-    # Computing correlation matrix
     correlation_matrix = numeric_df.corr()
     
     plt.figure(figsize=(12, 10))
@@ -80,13 +77,11 @@ def plot_boxplot_summary(X, y, headers, save_path='reports/plots_midpointsub/box
     for idx, feature in enumerate(numeric_feature_names):
         ax = axes[idx]
         
-        # Prepare data for boxplot (ensure numeric type)
         data_to_plot = [
             df[df['Target'] == 1][feature].astype(float).values,
             df[df['Target'] == 2][feature].astype(float).values
         ]
         
-        # Create boxplot
         bp = ax.boxplot(
             data_to_plot,
             tick_labels=['Good Credit (1)', 'Bad Credit (2)'],
@@ -95,7 +90,6 @@ def plot_boxplot_summary(X, y, headers, save_path='reports/plots_midpointsub/box
             showmeans=True
         )
         
-        # Color the boxes
         colors = ['lightblue', 'lightcoral']
         for patch, color in zip(bp['boxes'], colors):
             patch.set_facecolor(color)
@@ -105,7 +99,6 @@ def plot_boxplot_summary(X, y, headers, save_path='reports/plots_midpointsub/box
         ax.grid(True, alpha=0.3)
         ax.tick_params(axis='x', rotation=15)
     
-    # Hide unused subplots
     for idx in range(n_features, len(axes)):
         axes[idx].axis('off')
     
@@ -129,21 +122,18 @@ def plot_confusion_matrix(save_path='reports/plots_midpointsub/confusion_matrix.
         X_train, X_val, X_test
     )
     
-    # Train best model (Logistic Regression with optimized parameters)
     model = LogisticRegression(
         C=1.0,
         penalty='l1',
         solver='liblinear',
         max_iter=1000,
-        class_weight='balanced',  # Handle class imbalance
+        class_weight='balanced',  # handle class imbalance
         random_state=42
     )
     model.fit(X_train_prep, y_train)
     
-    # Predict on test set
     y_test_pred = model.predict(X_test_prep)
     
-    # Compute confusion matrix
     cm = confusion_matrix(y_test, y_test_pred)
     
     from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
@@ -155,7 +145,6 @@ def plot_confusion_matrix(save_path='reports/plots_midpointsub/confusion_matrix.
     
     fig, ax = plt.subplots(figsize=(14, 8))
     
-    # Create confusion matrix display
     disp = ConfusionMatrixDisplay(
         confusion_matrix=cm,
         display_labels=['Good Credit (1)', 'Bad Credit (2)']
@@ -168,20 +157,17 @@ def plot_confusion_matrix(save_path='reports/plots_midpointsub/confusion_matrix.
         colorbar=True
     )
     
-    # Customize plot
     ax.set_title('Confusion Matrix - Logistic Regression (Test Set)', 
                  fontsize=16, fontweight='bold', pad=20)
     ax.set_xlabel('Predicted Label', fontsize=13, fontweight='bold', labelpad=10)
     ax.set_ylabel('True Label', fontsize=13, fontweight='bold', labelpad=10)
     
-    # Add performance metrics as text box (positioned to the right)
     metrics_text = 'Test Set Performance:\n\n'
     metrics_text += f'Accuracy:  {accuracy:.4f}\n'
     metrics_text += f'Precision: {precision:.4f}\n'
     metrics_text += f'Recall:    {recall:.4f}\n'
     metrics_text += f'F1-Score:  {f1:.4f}'
     
-    # Position text box to the right with proper spacing
     ax.text(1.35, 0.5, metrics_text,
             transform=ax.transAxes,
             fontsize=12,
@@ -190,7 +176,6 @@ def plot_confusion_matrix(save_path='reports/plots_midpointsub/confusion_matrix.
             bbox=dict(boxstyle='round,pad=1', facecolor='lightblue', 
                      edgecolor='black', alpha=0.8, linewidth=2))
     
-    # Adjust layout to prevent overlap
     plt.subplots_adjust(right=0.75)
     
     plt.savefig(save_path, dpi=300, bbox_inches='tight')
@@ -205,29 +190,22 @@ def plot_residuals(save_path='reports/plots_midpointsub/residuals_plot.png'):
     Plot residuals vs predicted and residual histogram for the best regression model (Linear Regression) on test set.
     """
     
-    # Load and split data
     X, y, headers = load_raw_data()
     X_train, X_val, X_test, y_train, y_val, y_test = split_data_regression(X, y)
     
-    # Preprocess
     X_train_prep, X_val_prep, X_test_prep, prep = preprocess_for_linear_models(
         X_train, X_val, X_test
     )
     
-    # Train best model (Linear Regression)
     model = LinearRegression()
     model.fit(X_train_prep, y_train)
     
-    # Predict on test set
     y_test_pred = model.predict(X_test_prep)
     
-    # Calculate residuals
     residuals = y_test - y_test_pred
     
-    # Create figure with 2 subplots
     fig, axes = plt.subplots(1, 2, figsize=(16, 6))
     
-    # Plot 1: Residuals vs Predicted
     ax1 = axes[0]
     ax1.scatter(y_test_pred, residuals, alpha=0.6, edgecolors='k', s=80)
     ax1.axhline(y=0, color='r', linestyle='--', linewidth=2, label='Zero Residual Line')
@@ -237,13 +215,11 @@ def plot_residuals(save_path='reports/plots_midpointsub/residuals_plot.png'):
     ax1.grid(True, alpha=0.3)
     ax1.legend()
     
-    # Add trend line
     z = np.polyfit(y_test_pred, residuals, 1)
     p = np.poly1d(z)
     ax1.plot(y_test_pred, p(y_test_pred), "b--", alpha=0.8, linewidth=2, label=f'Trend: y={z[0]:.4f}x+{z[1]:.4f}')
     ax1.legend()
     
-    # Plot 2: Residual Histogram
     ax2 = axes[1]
     ax2.hist(residuals, bins=30, edgecolor='black', alpha=0.7, color='skyblue')
     ax2.axvline(x=0, color='r', linestyle='--', linewidth=2, label='Zero Residual')
@@ -253,7 +229,6 @@ def plot_residuals(save_path='reports/plots_midpointsub/residuals_plot.png'):
     ax2.grid(True, alpha=0.3, axis='y')
     ax2.legend()
     
-    # Add normal distribution overlay
     from scipy import stats
     mu, std = residuals.mean(), residuals.std()
     x = np.linspace(residuals.min(), residuals.max(), 100)
@@ -263,7 +238,6 @@ def plot_residuals(save_path='reports/plots_midpointsub/residuals_plot.png'):
     ax2_twin.set_ylabel('Probability Density', fontsize=10)
     ax2_twin.legend(loc='upper right')
     
-    # Overall title
     fig.suptitle('Residual Analysis - Linear Regression (Test Set)', 
                  fontsize=16, fontweight='bold', y=1.02)
     
@@ -273,7 +247,6 @@ def plot_residuals(save_path='reports/plots_midpointsub/residuals_plot.png'):
     plt.close()
     print(f"Residuals plot saved to {save_path}")
     
-    # Calculate metrics
     from sklearn.metrics import mean_squared_error, mean_absolute_error
     
     mae = mean_absolute_error(y_test, y_test_pred)
@@ -286,7 +259,6 @@ if __name__ == "__main__":
     X, y, headers = load_raw_data()
     print(f"\nLoaded data: {X.shape[0]} samples, {X.shape[1]} features")
     
-    # Create correlation heatmap
     correlation_matrix = plot_correlation_heatmap(X, y, headers)
     plot_boxplot_summary(X, y, headers)
     print("\nPlots saved to:")
