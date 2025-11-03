@@ -36,10 +36,6 @@ Predict credit risk (Good vs Bad credit) using customer financial and demographi
    - Finding: Linear models (Logistic/Linear Regression) outperformed Decision Trees
    - Insight: Credit risk has predominantly linear relationships with features
 
-4. **Hyperparameter Tuning**: Balancing accuracy vs recall
-   - Decision: Kept baseline config (C=1.0, penalty=l1, class_weight=balanced)
-   - Rationale: 71.3% accuracy with 73.3% recall for bad credits (optimal for credit risk)
-
 ### Design Decisions
 
 **Why Logistic Regression as baseline?**
@@ -132,24 +128,6 @@ python3 src/train_baselines.py
   - Decision Tree Regressor
 - Logs all experiments to MLflow
 - Saves results to `reports/tables_midpointsub/`
-
-**Expected Output**:
-```
-Loaded data: 1000 samples, 20 features
-
-Training Logistic Regression...
-  Test Accuracy: 0.7133
-Training Decision Tree Classifier...
-  Test Accuracy: 0.5467
-
-Training Linear Regression...
-  Test RMSE: 0.3879
-Training Decision Tree Regressor...
-  Test RMSE: 0.4144
-
-Saved: classification_metrics.csv
-Saved: regression_metrics.csv
-```
 
 #### 2. Hyperparameter Tuning (Optional)
 ```bash
@@ -281,62 +259,6 @@ predictions = model.predict(X_test)
 
 ---
 
-## Results
-
-### Classification Task
-
-| Model | Test Accuracy | F1-Score | ROC-AUC | Recall (Bad) |
-|-------|---------------|----------|---------|-------------|
-| **Logistic Regression** | **71.33%** | **0.723** | **0.779** | **73.3%** ⭐ |
-| Decision Tree | 54.67% | 0.555 | 0.693 | 62.2% |
-
-**Winner**: Logistic Regression
-- Best balance between accuracy and recall
-- Catches 73.3% of bad credits (critical for credit risk)
-- Interpretable coefficients for business understanding
-
-### Regression Task
-
-| Model | Test RMSE | Test MAE | Val RMSE | Generalization |
-|-------|-----------|----------|----------|----------------|
-| **Linear Regression** | **0.3879** | **0.3313** | 0.4177 | Excellent |
-| Decision Tree | 0.4145 | 0.3393 | 0.4347 | Good |
-
-**Winner**: Linear Regression
-- 6.4% better RMSE than Decision Tree
-- No overfitting (test performs better than validation)
-- Simple and interpretable
-
-### Key Insights
-
-1. **Linear models dominate**: Credit risk has strong linear relationships
-2. **No overfitting**: All models generalize well (val ≈ test performance)
-3. **Class imbalance handled**: `class_weight='balanced'` effective
-4. **Moderate task difficulty**: 71% accuracy suggests inherent noise in credit data
-5. **Recall prioritized**: For credit risk, catching bad credits > overall accuracy
-
-### Hyperparameter Tuning Results
-
-| Configuration | Accuracy | Recall (Bad) | Verdict |
-|---------------|----------|--------------|----------|
-| Baseline (l1, balanced) | 71.33% | 73.3% | ✅ Best overall |
-| Tuned (l2, no balance) | 77.33% | 51.1% | ❌ Poor recall |
-| Hybrid (l2, balanced) | 70.00% | 71.1% | ⚠️ Worse than baseline |
-
-**Decision**: Keep baseline configuration
-- Optimal balance for credit risk application
-- L1 regularization provides feature selection
-- `class_weight='balanced'` essential for catching bad credits
-
----
-
-### Potential Improvements
-
-- Feature engineering: polynomial features, interactions
-- Cost-sensitive learning: custom loss functions
-- Threshold optimization: adjust decision boundary
-- Cross-validation: k-fold for robust estimates
-- Feature selection: remove noisy features
 
 ## 📚 References
 
