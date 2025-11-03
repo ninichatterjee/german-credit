@@ -94,7 +94,7 @@ def tune_linear_regression(X_train, X_val, X_test, y_train, y_val, y_test):
                     'test_r2': test_r2
                 })
                 
-                if alpha in [0.01, 0.1, 1.0, 10.0]:  # Print selected alphas
+                if alpha in [0.01, 0.1, 1.0, 10.0]:
                     print(f"alpha={alpha:6.3f}, fit_intercept={fit_intercept} -> Val RMSE: {val_rmse:.4f}, Test RMSE: {test_rmse:.4f}")
                     
             except Exception as e:
@@ -133,7 +133,7 @@ def tune_linear_regression(X_train, X_val, X_test, y_train, y_val, y_test):
                     'n_features_used': n_features_used
                 })
                 
-                if alpha in [0.01, 0.1, 1.0, 10.0]:  # Print selected alphas
+                if alpha in [0.01, 0.1, 1.0, 10.0]: 
                     print(f"alpha={alpha:6.3f}, fit_intercept={fit_intercept} -> Val RMSE: {val_rmse:.4f}, Test RMSE: {test_rmse:.4f}, Features: {n_features_used}/20")
                     
             except Exception as e:

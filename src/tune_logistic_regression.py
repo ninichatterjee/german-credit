@@ -107,7 +107,6 @@ def tune_logistic_regression(X_train, X_val, X_test, y_train, y_val, y_test):
     )
     best_model.fit(X_train_prep, y_train)
     
-    # Evaluate on test set
     y_test_pred = best_model.predict(X_test_prep)
     y_test_proba = best_model.predict_proba(X_test_prep)
     

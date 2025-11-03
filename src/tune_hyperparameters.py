@@ -26,7 +26,6 @@ def tune_decision_tree_classifier(X_train, X_val, X_test, y_train, y_val, y_test
         X_train, X_val, X_test
     )
     
-    # Define hyperparameter ranges to test
     max_depth_values = [3, 5, 7, 10, 15, 20]
     min_samples_split_values = [2, 10, 50, 100]
     min_samples_leaf_values = [1, 5, 20, 50]
@@ -46,7 +45,6 @@ def tune_decision_tree_classifier(X_train, X_val, X_test, y_train, y_val, y_test
                          len(splitter_values) * len(max_features_values))
     print(f"Total combinations: {total_combinations}")
     
-    # Test all combinations
     current = 0
     
     for max_depth in max_depth_values:
@@ -57,7 +55,6 @@ def tune_decision_tree_classifier(X_train, X_val, X_test, y_train, y_val, y_test
                         for max_features in max_features_values:
                             current += 1
                             
-                            # Train model with current hyperparameters
                             model = DecisionTreeClassifier(
                                 max_depth=max_depth,
                                 min_samples_split=min_samples_split,
@@ -70,7 +67,6 @@ def tune_decision_tree_classifier(X_train, X_val, X_test, y_train, y_val, y_test
                             
                             model.fit(X_train_prep, y_train)
                             
-                            # Evaluate on validation set
                             y_val_pred = model.predict(X_val_prep)
                             y_val_proba = model.predict_proba(X_val_prep)
                             
@@ -78,7 +74,6 @@ def tune_decision_tree_classifier(X_train, X_val, X_test, y_train, y_val, y_test
                             val_f1 = f1_score(y_val, y_val_pred, average='weighted')
                             val_roc_auc = roc_auc_score(y_val, y_val_proba[:, 1])
                             
-                            # Store results
                             results.append({
                                 'max_depth': max_depth,
                                 'min_samples_split': min_samples_split,
@@ -91,13 +86,11 @@ def tune_decision_tree_classifier(X_train, X_val, X_test, y_train, y_val, y_test
                                 'val_roc_auc': val_roc_auc
                             })
                             
-                            # Progress update every 200 combinations
                             if current % 200 == 0:
                                 print(f"Progress: {current}/{total_combinations} combinations tested...")
     
     results_df = pd.DataFrame(results)
     
-    # Find best parameters based on validation accuracy
     best_idx = results_df['val_accuracy'].idxmax()
     max_depth_val = results_df.loc[best_idx, 'max_depth']
     best_params = {
@@ -135,7 +128,6 @@ def tune_decision_tree_classifier(X_train, X_val, X_test, y_train, y_val, y_test
     )
     best_model.fit(X_train_prep, y_train)
     
-    # Evaluate on test set
     y_test_pred = best_model.predict(X_test_prep)
     y_test_proba = best_model.predict_proba(X_test_prep)
     
@@ -148,11 +140,9 @@ def tune_decision_tree_classifier(X_train, X_val, X_test, y_train, y_val, y_test
     print(f"  F1-Score: {test_f1:.4f}")
     print(f"  ROC-AUC:  {test_roc_auc:.4f}")
     
-    # Save detailed results
     results_df.to_csv('reports/tables_midpointsub/hyperparameter_tuning_results.csv', index=False)
     print(f"\nDetailed results saved to reports/tables_midpointsub/hyperparameter_tuning_results.csv")
     
-    # Save best parameters
     best_params_df = pd.DataFrame([{
         'max_depth': best_params['max_depth'],
         'min_samples_split': best_params['min_samples_split'],
@@ -210,7 +200,6 @@ if __name__ == "__main__":
     X_train, X_val, X_test, y_train, y_val, y_test = split_data_classification(X, y)
     print(f"Split data: Train={X_train.shape[0]}, Val={X_val.shape[0]}, Test={X_test.shape[0]}\n")
     
-    # Run hyperparameter tuning and analyze impact of each
     best_params, results_df, best_model = tune_decision_tree_classifier(
         X_train, X_val, X_test, y_train, y_val, y_test
     )
