@@ -1,0 +1,10 @@
+artifact_location: file:///Users/WINDOWS11/PycharmProjects/german-credit/mlruns/836026116098469698/models/m-3874db866bbe4f109979c02b59999e16/artifacts
+creation_timestamp: 1762124957734
+experiment_id: '836026116098469698'
+last_updated_timestamp: 1762124959293
+model_id: m-3874db866bbe4f109979c02b59999e16
+model_type: null
+name: model
+source_run_id: 2c2568c66612495ab13bfd930c931fe4
+status: 2
+status_message: null

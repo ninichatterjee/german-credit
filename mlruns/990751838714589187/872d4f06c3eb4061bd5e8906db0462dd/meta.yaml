@@ -1,0 +1,14 @@
+artifact_uri: file:///Users/WINDOWS11/PycharmProjects/german-credit/mlruns/990751838714589187/872d4f06c3eb4061bd5e8906db0462dd/artifacts
+end_time: 1762127190623
+entry_point_name: ''
+experiment_id: '990751838714589187'
+lifecycle_stage: active
+run_id: 872d4f06c3eb4061bd5e8906db0462dd
+run_name: Best_Tuned_Logistic_Regression
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1762127189271
+status: 3
+tags: []
+user_id: WINDOWS11

@@ -1,0 +1,14 @@
+artifact_uri: file:///Users/WINDOWS11/PycharmProjects/german-credit/mlruns/836026116098469698/2c2568c66612495ab13bfd930c931fe4/artifacts
+end_time: 1762124959294
+entry_point_name: ''
+experiment_id: '836026116098469698'
+lifecycle_stage: active
+run_id: 2c2568c66612495ab13bfd930c931fe4
+run_name: Decision_Tree_Classifier
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1762124957699
+status: 3
+tags: []
+user_id: WINDOWS11

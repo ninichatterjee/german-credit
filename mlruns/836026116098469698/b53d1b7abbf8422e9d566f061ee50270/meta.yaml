@@ -1,0 +1,14 @@
+artifact_uri: file:///Users/WINDOWS11/PycharmProjects/german-credit/mlruns/836026116098469698/b53d1b7abbf8422e9d566f061ee50270/artifacts
+end_time: 1762125535258
+entry_point_name: ''
+experiment_id: '836026116098469698'
+lifecycle_stage: active
+run_id: b53d1b7abbf8422e9d566f061ee50270
+run_name: Decision_Tree_Regressor
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1762125534110
+status: 3
+tags: []
+user_id: WINDOWS11

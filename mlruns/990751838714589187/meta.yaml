@@ -1,0 +1,6 @@
+artifact_location: file:///Users/WINDOWS11/PycharmProjects/german-credit/mlruns/990751838714589187
+creation_time: 1762127186427
+experiment_id: '990751838714589187'
+last_update_time: 1762127186427
+lifecycle_stage: active
+name: logistic-regression-tuning

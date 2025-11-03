@@ -1,0 +1,14 @@
+artifact_uri: file:///Users/WINDOWS11/PycharmProjects/german-credit/mlruns/990751838714589187/f952ebf6743b4a118903d3da45463994/artifacts
+end_time: 1762127867131
+entry_point_name: ''
+experiment_id: '990751838714589187'
+lifecycle_stage: active
+run_id: f952ebf6743b4a118903d3da45463994
+run_name: Hybrid_L2_Balanced
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1762127865859
+status: 3
+tags: []
+user_id: WINDOWS11

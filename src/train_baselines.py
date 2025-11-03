@@ -96,13 +96,13 @@ def train_classifiers(X_train, X_val, X_test, y_train, y_val, y_test):
     with mlflow.start_run(run_name="Decision_Tree_Classifier"):
         # Log parameters
         params = {
-            'max_depth': 3,
+            'max_depth': 5,
             'min_samples_split': 100,
-            'min_samples_leaf': 1,
+            'min_samples_leaf': 2,
             'class_weight': 'balanced',
             'splitter': 'random',
             'max_features': None,
-            'ccp_alpha': 0.0,
+            'ccp_alpha': 0.00025,
             'criterion': 'gini',
             'min_impurity_decrease': 0.0,
             'random_state': RANDOM_SEED

@@ -1,0 +1,14 @@
+artifact_uri: file:///Users/WINDOWS11/PycharmProjects/german-credit/mlruns/836026116098469698/e69455c4051646a588332179c967a231/artifacts
+end_time: 1762126534962
+entry_point_name: ''
+experiment_id: '836026116098469698'
+lifecycle_stage: active
+run_id: e69455c4051646a588332179c967a231
+run_name: Linear_Regression
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1762126533826
+status: 3
+tags: []
+user_id: WINDOWS11

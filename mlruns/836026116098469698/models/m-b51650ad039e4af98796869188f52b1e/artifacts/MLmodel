@@ -1,0 +1,22 @@
+artifact_path: file:///Users/WINDOWS11/PycharmProjects/german-credit/mlruns/836026116098469698/models/m-b51650ad039e4af98796869188f52b1e/artifacts
+flavors:
+  python_function:
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.sklearn
+    model_path: model.pkl
+    predict_fn: predict
+    python_version: 3.9.6
+  sklearn:
+    code: null
+    pickled_model: model.pkl
+    serialization_format: cloudpickle
+    sklearn_version: 1.6.1
+mlflow_version: 3.1.4
+model_id: m-b51650ad039e4af98796869188f52b1e
+model_size_bytes: 2706
+model_uuid: m-b51650ad039e4af98796869188f52b1e
+prompts: null
+run_id: 75daee8303a046bba1e8af952c975f7c
+utc_time_created: '2025-11-02 23:35:35.119711'
