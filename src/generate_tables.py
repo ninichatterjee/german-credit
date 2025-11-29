@@ -36,8 +36,12 @@ def generate_comparison_tables():
                                   order_by=["start_time DESC"], max_results=1)
     
     mlflow.set_experiment("german-credit-neural-networks")
-    nn_runs = mlflow.search_runs(filter_string="tags.mlflow.runName = 'MLP_Classification'", 
+    # Try to get TensorFlow run first, fall back to sklearn
+    nn_runs = mlflow.search_runs(filter_string="tags.mlflow.runName = 'TF_MLP_Classification'", 
                                   order_by=["start_time DESC"], max_results=1)
+    if len(nn_runs) == 0:
+        nn_runs = mlflow.search_runs(filter_string="tags.mlflow.runName = 'MLP_Classification'", 
+                                      order_by=["start_time DESC"], max_results=1)
     
     classification_data = []
     

@@ -281,10 +281,20 @@ def plot_nn_learning_curves(save_path_clf=f'{PLOTS_FINAL_DIR}/plot1_classificati
     with open(f'{PLOTS_FINAL_DIR}/regression_nn_loss_curve.pkl', 'rb') as f:
         reg_loss = pickle.load(f)
     
+    # Handle both TensorFlow history (dict) and sklearn loss_curve_ (list)
+    if isinstance(clf_loss, dict):
+        clf_train_loss = clf_loss['loss']
+        clf_val_loss = clf_loss.get('val_loss', None)
+    else:
+        clf_train_loss = clf_loss
+        clf_val_loss = None
+    
     # Plot 1: Classification NN
     fig, ax = plt.subplots(figsize=(10, 6))
-    epochs = range(1, len(clf_loss) + 1)
-    ax.plot(epochs, clf_loss, 'b-', linewidth=2, label='Training Loss')
+    epochs = range(1, len(clf_train_loss) + 1)
+    ax.plot(epochs, clf_train_loss, 'b-', linewidth=2, label='Training Loss')
+    if clf_val_loss is not None:
+        ax.plot(epochs, clf_val_loss, 'r--', linewidth=2, label='Validation Loss')
     ax.set_xlabel('Epoch', fontsize=12, fontweight='bold')
     ax.set_ylabel('Loss', fontsize=12, fontweight='bold')
     ax.set_title('Classification Neural Network - Learning Curve', fontsize=14, fontweight='bold', pad=15)
@@ -295,10 +305,20 @@ def plot_nn_learning_curves(save_path_clf=f'{PLOTS_FINAL_DIR}/plot1_classificati
     plt.close()
     print(f"Classification NN learning curve saved to {save_path_clf}")
     
+    # Handle regression loss (could be dict or list)
+    if isinstance(reg_loss, dict):
+        reg_train_loss = reg_loss['loss']
+        reg_val_loss = reg_loss.get('val_loss', None)
+    else:
+        reg_train_loss = reg_loss
+        reg_val_loss = None
+    
     # Plot 2: Regression NN
     fig, ax = plt.subplots(figsize=(10, 6))
-    epochs = range(1, len(reg_loss) + 1)
-    ax.plot(epochs, reg_loss, 'r-', linewidth=2, label='Training Loss')
+    epochs = range(1, len(reg_train_loss) + 1)
+    ax.plot(epochs, reg_train_loss, 'r-', linewidth=2, label='Training Loss')
+    if reg_val_loss is not None:
+        ax.plot(epochs, reg_val_loss, 'b--', linewidth=2, label='Validation Loss')
     ax.set_xlabel('Epoch', fontsize=12, fontweight='bold')
     ax.set_ylabel('Loss (MSE)', fontsize=12, fontweight='bold')
     ax.set_title('Regression Neural Network - Learning Curve', fontsize=14, fontweight='bold', pad=15)
@@ -407,41 +427,46 @@ def plot_best_classification_confusion_matrix(save_path=f'{PLOTS_FINAL_DIR}/plot
 def plot_best_regression_residuals(save_path=f'{PLOTS_FINAL_DIR}/plot4_residuals_best_model.png'):
     """
     Plot 4: Residuals vs predicted for best regression model on test set.
-    Compares classical models vs NN and selects the best.
+    Loads the best model from MLflow instead of retraining.
     """
-    from sklearn.neural_network import MLPRegressor
-    from config import NN_HIDDEN_LAYERS, NN_ACTIVATION, NN_SOLVER, NN_LEARNING_RATE, NN_BATCH_SIZE, NN_ALPHA, NN_MAX_ITER, NN_EARLY_STOPPING, NN_VALIDATION_FRACTION, NN_PATIENCE, RANDOM_SEED
-    from sklearn.metrics import mean_absolute_error
-    
+    import mlflow
+    from sklearn.metrics import mean_absolute_error, mean_squared_error
+    import numpy as np
+
+    # Load data
     X, y, headers = load_raw_data()
     X_train, X_val, X_test, y_train, y_val, y_test = split_data_regression(X, y)
     X_train_prep, X_val_prep, X_test_prep, prep = preprocess_for_linear_models(X_train, X_val, X_test)
+
+    # Load best model from MLflow
+    mlflow.set_tracking_uri('file:./mlruns')  # Ensure we're looking in the right place
+    mlflow.set_experiment('german-credit-regression')
     
-    # Train Linear Regression
-    lr_model = LinearRegression()
-    lr_model.fit(X_train_prep, y_train)
-    lr_pred = lr_model.predict(X_test_prep)
-    lr_mae = mean_absolute_error(y_test, lr_pred)
-    
-    # Train Neural Network
-    nn_model = MLPRegressor(hidden_layer_sizes=NN_HIDDEN_LAYERS, activation=NN_ACTIVATION, solver=NN_SOLVER,
-                            alpha=NN_ALPHA, batch_size=NN_BATCH_SIZE, learning_rate_init=NN_LEARNING_RATE,
-                            max_iter=NN_MAX_ITER, random_state=RANDOM_SEED, early_stopping=NN_EARLY_STOPPING,
-                            validation_fraction=NN_VALIDATION_FRACTION, n_iter_no_change=NN_PATIENCE,
-                            shuffle=True, verbose=False)
-    nn_model.fit(X_train_prep, y_train)
-    nn_pred = nn_model.predict(X_test_prep)
-    nn_mae = mean_absolute_error(y_test, nn_pred)
-    
-    # Select best model (lower MAE is better)
-    if nn_mae <= lr_mae:
-        best_model_name = 'Neural Network'
-        best_pred = nn_pred
-        best_mae = nn_mae
-    else:
-        best_model_name = 'Linear Regression'
-        best_pred = lr_pred
-        best_mae = lr_mae
+    try:
+        # Try to find the best run by test_mae
+        best_run = mlflow.search_runs(
+            order_by=['metrics.test_mae ASC'],
+            max_results=1
+        ).iloc[0]
+        
+        # Load the model
+        model_uri = f"runs:/{best_run.run_id}/model"
+        model = mlflow.sklearn.load_model(model_uri)
+        
+        # Get predictions
+        best_pred = model.predict(X_test_prep)
+        best_mae = mean_absolute_error(y_test, best_pred)
+        best_model_name = best_run.tags.get('mlflow.runName', 'Best Regression Model')
+        
+    except Exception as e:
+        print(f"Error loading model from MLflow: {e}")
+        print("Falling back to training a new Linear Regression model...")
+        from sklearn.linear_model import LinearRegression
+        model = LinearRegression()
+        model.fit(X_train_prep, y_train)
+        best_pred = model.predict(X_test_prep)
+        best_mae = mean_absolute_error(y_test, best_pred)
+        best_model_name = 'Linear Regression (Fallback)'
     
     # Calculate residuals
     residuals = y_test - best_pred
@@ -479,20 +504,58 @@ def plot_best_regression_residuals(save_path=f'{PLOTS_FINAL_DIR}/plot4_residuals
 def plot_feature_importance(save_path=f'{PLOTS_FINAL_DIR}/plot5_feature_importance.png'):
     """
     Plot 5: Feature importance using permutation importance on best classical model.
+    Loads the best model from MLflow instead of retraining.
     """
     from sklearn.inspection import permutation_importance
-    
+    import mlflow
+    import numpy as np
+
+    # Load data
     X, y, headers = load_raw_data()
     X_train, X_val, X_test, y_train, y_val, y_test = split_data_classification(X, y)
     X_train_prep, X_val_prep, X_test_prep, prep = preprocess_for_linear_models(X_train, X_val, X_test)
+
+    # Load best model from MLflow
+    mlflow.set_tracking_uri('file:./mlruns')  # Ensure we're looking in the right place
+    mlflow.set_experiment('german-credit-classification')
     
-    # Train Logistic Regression (best classical model)
-    model = LogisticRegression(C=1.0, penalty='l1', solver='liblinear', max_iter=1000,
-                               class_weight='balanced', random_state=42)
-    model.fit(X_train_prep, y_train)
+    try:
+        # Try to find the best run by test_f1_score
+        best_run = mlflow.search_runs(
+            order_by=['metrics.test_f1_score DESC'],
+            max_results=1
+        ).iloc[0]
+        
+        # Load the model
+        model_uri = f"runs:/{best_run.run_id}/model"
+        model = mlflow.sklearn.load_model(model_uri)
+        
+        # Get model name for the plot title
+        model_name = best_run.tags.get('mlflow.runName', 'Best Model')
+        
+    except Exception as e:
+        print(f"Error loading model from MLflow: {e}")
+        print("Falling back to training a new Logistic Regression model...")
+        from sklearn.linear_model import LogisticRegression
+        model = LogisticRegression(C=1.0, penalty='l1', solver='liblinear', max_iter=1000,
+                                 class_weight='balanced', random_state=42)
+        model.fit(X_train_prep, y_train)
+        model_name = 'Logistic Regression (Fallback)'
     
     # Calculate permutation importance on test set
-    perm_importance = permutation_importance(model, X_test_prep, y_test, n_repeats=10, random_state=42)
+    try:
+        perm_importance = permutation_importance(model, X_test_prep, y_test, n_repeats=10, random_state=42)
+    except Exception as e:
+        print(f"Error calculating permutation importance: {e}")
+        print("Falling back to using model coefficients if available...")
+        if hasattr(model, 'coef_'):
+            # For linear models, use absolute coefficients as importance
+            importance = np.abs(model.coef_[0])
+            perm_importance = type('obj', (object,), {'importances_mean': importance})
+        else:
+            # Fallback to random importance if no coefficients
+            print("No feature importance available for this model type.")
+            return
     
     # Get feature names (after one-hot encoding)
     feature_names = []

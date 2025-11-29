@@ -18,7 +18,7 @@ MLFLOW_EXPERIMENT_NN = "german-credit-neural-networks"
 MLFLOW_EXPERIMENT_TUNING = "german-credit-hyperparameter-tuning"
 
 # Neural network hyperparameters (optimized from tuning with SMOTE)
-NN_HIDDEN_LAYERS = (64, 32, 16)  # Three layers - best architecture
+NN_HIDDEN_LAYERS = (64, 32)  # two layers to prevent overfitting 
 NN_ACTIVATION = 'relu'
 NN_SOLVER = 'adam'
 NN_LEARNING_RATE = 0.001  # Reduced from 0.007 to prevent numeric instability
