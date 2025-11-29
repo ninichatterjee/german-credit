@@ -1,12 +1,20 @@
+"""
+Data loading and splitting utilities for the German Credit dataset.
+"""
 import csv
 import numpy as np
+import pandas as pd
 from sklearn.model_selection import train_test_split
-
-RANDOM_SEED = 42
+from config import RANDOM_SEED
 
 def load_raw_data():
     """Load German Credit dataset from CSV."""
-    filename = 'data/raw/german_credit.csv'
+    import os
+    # Handle both running from root and from src/
+    if os.path.exists('data/raw/german_credit.csv'):
+        filename = 'data/raw/german_credit.csv'
+    else:
+        filename = '../data/raw/german_credit.csv'
     with open(filename, 'r') as f:
         reader = csv.reader(f, delimiter=',')
         headers = next(reader)

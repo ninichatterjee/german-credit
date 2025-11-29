@@ -1,4 +1,15 @@
-Description of the German credit dataset.
+# German Credit Dataset
+
+## Download Instructions
+
+The dataset is already included in this repository as `german.data-numeric`. 
+
+If you need to re-download:
+1. Visit: https://archive.ics.uci.edu/ml/datasets/statlog+(german+credit+data)
+2. Download `german.data-numeric` 
+3. Place it in the `data/` directory
+
+## Dataset Description
 
 1. Title: German Credit data
 

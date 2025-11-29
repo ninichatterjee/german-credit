@@ -9,8 +9,7 @@ from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
 
 from data import load_raw_data, split_data_classification
 from features import preprocess_for_linear_models
-
-RANDOM_SEED = 42
+from config import RANDOM_SEED
 
 
 def tune_logistic_regression(X_train, X_val, X_test, y_train, y_val, y_test):

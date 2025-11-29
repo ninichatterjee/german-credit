@@ -9,8 +9,7 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 
 from data import load_raw_data, split_data_regression
 from features import preprocess_for_linear_models
-
-RANDOM_SEED = 42
+from config import RANDOM_SEED
 
 
 def tune_linear_regression(X_train, X_val, X_test, y_train, y_val, y_test):

@@ -9,15 +9,18 @@ import mlflow
 import mlflow.sklearn
 from sklearn.linear_model import LogisticRegression, LinearRegression
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
-from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
-from sklearn.metrics import mean_squared_error, mean_absolute_error
+from sklearn.metrics import (
+    accuracy_score, precision_score, recall_score, f1_score, roc_auc_score,
+    confusion_matrix, mean_squared_error, mean_absolute_error
+)
 
 from data import load_raw_data, split_data_classification, split_data_regression
 from features import preprocess_for_linear_models, preprocess_for_decision_trees
+from config import RANDOM_SEED, MLFLOW_EXPERIMENT_BASELINE
+from utils import set_random_seeds, print_model_summary, calculate_class_weights
 
-RANDOM_SEED = 42
-
-mlflow.set_experiment("german-credit-baseline-models")
+set_random_seeds(RANDOM_SEED)
+mlflow.set_experiment(MLFLOW_EXPERIMENT_BASELINE)
 
 def train_classifiers(X_train, X_val, X_test, y_train, y_val, y_test):
     """
@@ -294,3 +297,31 @@ if __name__ == "__main__":
     })
     regression_df.to_csv('reports/tables_midpointsub/regression_metrics.csv', index=False)
     print("Saved: regression_metrics.csv")
+
+
+if __name__ == "__main__":
+    # Load data
+    X, y, headers = load_raw_data()
+    print(f"Loaded data: {X.shape[0]} samples, {X.shape[1]} features")
+    
+    # Train classification models
+    print("\n" + "="*60)
+    print("CLASSIFICATION TASK")
+    print("="*60)
+    X_train, X_val, X_test, y_train, y_val, y_test = split_data_classification(X, y)
+    classification_results = train_classifiers(
+        X_train, X_val, X_test, y_train, y_val, y_test
+    )
+    
+    # Train regression models
+    print("\n" + "="*60)
+    print("REGRESSION TASK")
+    print("="*60)
+    X_train, X_val, X_test, y_train, y_val, y_test = split_data_regression(X, y)
+    regression_results = train_regressors(
+        X_train, X_val, X_test, y_train, y_val, y_test
+    )
+    
+    print("\n" + "="*60)
+    print("TRAINING COMPLETE")
+    print("="*60)

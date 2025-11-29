@@ -5,14 +5,7 @@ Logistic Regression, Linear Regression, Decision Tree Classifier, Decision Tree 
 import numpy as np
 from sklearn.preprocessing import LabelEncoder, StandardScaler, OneHotEncoder
 
-RANDOM_SEED = 42
-
-# Categorical features: Attributes 1, 3, 4, 6, 7, 9, 10, 12, 14, 15, 17, 19, 20
-CATEGORICAL_INDICES = [0, 2, 3, 5, 6, 8, 9, 11, 13, 14, 16, 18, 19]
-
-# Numerical features: Attributes 2, 5, 8, 11, 13, 16, 18
-# Attributes: Duration (months), Credit amount, Age (years), Installment rate (percentage of disposable income), Present residence (years), Number of credits at bank, Number of people being liable
-NUMERICAL_INDICES = [1, 4, 7, 10, 12, 15, 17]
+from config import RANDOM_SEED, CATEGORICAL_INDICES, NUMERICAL_INDICES
 
 def encode_categorical_features(X_train, X_val, X_test):
     """
@@ -73,10 +66,14 @@ def preprocess_for_decision_trees(X_train, X_val, X_test):
     return X_train_prep, X_val_prep, X_test_prep, preprocessors
 
 
-def preprocess_for_linear_models(X_train, X_val, X_test):
+def preprocess_for_linear_models(X_train, X_val, X_test, add_interactions=False):
     """
     Preprocess features for Linear models (Logistic Regression and Linear Regression).
     Uses one-hot encoding for categorical features and scaling for numerical features.
+    
+    Args:
+        X_train, X_val, X_test: Raw feature arrays
+        add_interactions: If True, adds interaction features (e.g., feature1 * feature2)
     """
     X_train_num = X_train[:, NUMERICAL_INDICES].astype(float)
     X_val_num = X_val[:, NUMERICAL_INDICES].astype(float)
@@ -100,9 +97,22 @@ def preprocess_for_linear_models(X_train, X_val, X_test):
     X_val_prep = np.hstack([X_val_num_scaled, X_val_cat_encoded])
     X_test_prep = np.hstack([X_test_num_scaled, X_test_cat_encoded])
     
+    # Optionally add interaction features
+    if add_interactions:
+        # Create simple interactions between important numerical features
+        # Duration (idx 1) × Credit Amount (idx 4) = Monthly payment burden
+        train_interaction = X_train_num[:, 0] * X_train_num[:, 2]  # Duration × Credit
+        val_interaction = X_val_num[:, 0] * X_val_num[:, 2]
+        test_interaction = X_test_num[:, 0] * X_test_num[:, 2]
+        
+        X_train_prep = np.hstack([X_train_prep, train_interaction.reshape(-1, 1)])
+        X_val_prep = np.hstack([X_val_prep, val_interaction.reshape(-1, 1)])
+        X_test_prep = np.hstack([X_test_prep, test_interaction.reshape(-1, 1)])
+    
     preprocessors = {
         'onehot_encoder': onehot_encoder,
-        'scaler': scaler
+        'scaler': scaler,
+        'interactions': add_interactions
     }
     
     return X_train_prep, X_val_prep, X_test_prep, preprocessors
