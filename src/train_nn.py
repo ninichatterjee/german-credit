@@ -13,7 +13,6 @@ from imblearn.over_sampling import SMOTE
 import pickle
 import warnings
 
-# Try to import TensorFlow, fall back to sklearn if not available
 try:
     import tensorflow as tf
     from tensorflow import keras
@@ -91,12 +90,10 @@ def train_classification_nn_tf(X_train, X_val, X_test, y_train, y_val, y_test):
     """
     print("\n=== Training TensorFlow Classification Neural Network ===")
     
-    # Preprocess data
     X_train_prep, X_val_prep, X_test_prep, preprocessor = preprocess_for_linear_models(
         X_train, X_val, X_test
     )
     
-    # Apply SMOTE
     print_class_distribution(y_train, "BEFORE SMOTE")
     smote = SMOTE(random_state=RANDOM_SEED, k_neighbors=5)
     X_train_balanced, y_train_balanced = smote.fit_resample(X_train_prep, y_train)
@@ -107,15 +104,18 @@ def train_classification_nn_tf(X_train, X_val, X_test, y_train, y_val, y_test):
     y_val_tf = y_val - 1
     y_test_tf = y_test - 1
     
-    with mlflow.start_run(run_name="TF_MLP_Classification"):
-        # Create model with increased dropout and L2 regularization
+    with mlflow.start_run(run_name="TF_MLP_Classification") as run:
+        mlflow.log_param("dropout_rate", 0.1)
+        mlflow.log_param("l2_lambda", 0.01)
+        mlflow.log_param("use_smote", True)
+        mlflow.log_param("k_neighbors", 5)
+        
         model = create_tf_classification_model(
             X_train_balanced.shape[1],
-            dropout_rate=0.5,  # Increased from 0.3
-            l2_lambda=0.01    # Increased L2 regularization
+            dropout_rate=0.1,  
+            l2_lambda=0.01    
         )
         
-        # Callbacks
         early_stop = keras.callbacks.EarlyStopping(
             monitor='val_loss',
             patience=20,  # Increased patience
@@ -123,7 +123,6 @@ def train_classification_nn_tf(X_train, X_val, X_test, y_train, y_val, y_test):
             verbose=1
         )
         
-        # Learning rate scheduler
         reduce_lr = keras.callbacks.ReduceLROnPlateau(
             monitor='val_loss',
             factor=0.5,     # Reduce learning rate by half
@@ -132,7 +131,6 @@ def train_classification_nn_tf(X_train, X_val, X_test, y_train, y_val, y_test):
             verbose=1
         )
         
-        # Model checkpoint
         checkpoint = keras.callbacks.ModelCheckpoint(
             'best_model.h5',
             monitor='val_loss',
@@ -141,9 +139,19 @@ def train_classification_nn_tf(X_train, X_val, X_test, y_train, y_val, y_test):
             verbose=0
         )
         
-        callbacks = [early_stop, reduce_lr, checkpoint]
+        from mlflow.tensorflow import MLflowCallback
         
-        # Train model with smaller batch size
+        callbacks = [
+            early_stop, 
+            reduce_lr, 
+            checkpoint,
+            MLflowCallback(
+                log_models=True,
+                log_model_signatures=True,
+                log_input_examples=True
+            )
+        ]
+        
         history = model.fit(
             X_train_balanced, y_train_tf,
             validation_data=(X_val_prep, y_val_tf),
@@ -154,14 +162,12 @@ def train_classification_nn_tf(X_train, X_val, X_test, y_train, y_val, y_test):
             shuffle=True
         )
         
-        # Get predictions
         y_val_proba = model.predict(X_val_prep).flatten()
         y_val_pred = (y_val_proba > 0.5).astype(int) + 1  # Convert back to 1/2
         
         y_test_proba = model.predict(X_test_prep).flatten()
         y_test_pred = (y_test_proba > 0.5).astype(int) + 1  # Convert back to 1/2
         
-        # Calculate metrics
         val_accuracy = accuracy_score(y_val, y_val_pred)
         val_precision = precision_score(y_val, y_val_pred, pos_label=2, zero_division=0)
         val_recall = recall_score(y_val, y_val_pred, pos_label=2, zero_division=0)
@@ -174,9 +180,8 @@ def train_classification_nn_tf(X_train, X_val, X_test, y_train, y_val, y_test):
         test_f1 = f1_score(y_test, y_test_pred, pos_label=2, zero_division=0)
         test_roc_auc = roc_auc_score(y_test, y_test_proba)
         
-        # Log metrics
         mlflow.log_param('framework', 'tensorflow')
-        mlflow.log_param('dropout_rate', 0.3)
+        mlflow.log_param('dropout_rate', 0.1)
         mlflow.log_param('batch_normalization', True)
         mlflow.log_param('architecture', str(NN_HIDDEN_LAYERS))
         
@@ -192,10 +197,8 @@ def train_classification_nn_tf(X_train, X_val, X_test, y_train, y_val, y_test):
         mlflow.log_metric('test_f1_score', test_f1)
         mlflow.log_metric('test_roc_auc', test_roc_auc)
         
-        # Save model
         mlflow.tensorflow.log_model(model, "model")
         
-        # Save loss curves
         with open(f'{PLOTS_FINAL_DIR}/classification_nn_loss_curve.pkl', 'wb') as f:
             pickle.dump(history.history, f)
         
@@ -213,22 +216,17 @@ def train_classification_nn_tf(X_train, X_val, X_test, y_train, y_val, y_test):
             'history': history.history
         }
 
-
 def train_classification_nn(X_train, X_val, X_test, y_train, y_val, y_test):
     """
     Train MLP classifier - uses TensorFlow if available, otherwise sklearn.
-    Architecture: Input -> 64 -> 32 -> 1 (sigmoid)
     """
     if TF_AVAILABLE:
         return train_classification_nn_tf(X_train, X_val, X_test, y_train, y_val, y_test)
-    print("\n=== Training Classification Neural Network ===")
     
-    # Preprocess data (same as linear models: OneHot + Scaling)
     X_train_prep, X_val_prep, X_test_prep, preprocessor = preprocess_for_linear_models(
         X_train, X_val, X_test
     )
     
-    # Apply SMOTE to handle class imbalance (70% good, 30% bad)
     print_class_distribution(y_train, "BEFORE SMOTE")
     
     smote = SMOTE(random_state=RANDOM_SEED, k_neighbors=5)
@@ -238,7 +236,6 @@ def train_classification_nn(X_train, X_val, X_test, y_train, y_val, y_test):
     print(f"  Total samples: {len(y_train_balanced)} (increased from {len(y_train)})")
     
     with mlflow.start_run(run_name="MLP_Classification"):
-        # Define MLP architecture with class weights
         mlp = MLPClassifier(
             hidden_layer_sizes=NN_HIDDEN_LAYERS,
             activation=NN_ACTIVATION,
@@ -255,7 +252,6 @@ def train_classification_nn(X_train, X_val, X_test, y_train, y_val, y_test):
             verbose=False
         )
         
-        # Log parameters
         mlflow.log_param('model_type', 'classification')
         mlflow.log_param('architecture', f'{NN_HIDDEN_LAYERS[0]}-{NN_HIDDEN_LAYERS[1]}-{NN_HIDDEN_LAYERS[2] if len(NN_HIDDEN_LAYERS) > 2 else 1}')
         mlflow.log_param('activation', NN_ACTIVATION)
@@ -270,16 +266,13 @@ def train_classification_nn(X_train, X_val, X_test, y_train, y_val, y_test):
         mlflow.log_param('smote_applied', True)
         mlflow.log_param('samples_after_smote', len(y_train_balanced))
         
-        # Train with SMOTE-balanced data
         mlp.fit(X_train_balanced, y_train_balanced)
         
-        # Get predictions
         y_val_pred = mlp.predict(X_val_prep)
         y_val_proba = mlp.predict_proba(X_val_prep)[:, 1]
         y_test_pred = mlp.predict(X_test_prep)
         y_test_proba = mlp.predict_proba(X_test_prep)[:, 1]
         
-        # Calculate metrics (pos_label=2 for Bad Credit class)
         val_accuracy = accuracy_score(y_val, y_val_pred)
         val_precision = precision_score(y_val, y_val_pred, pos_label=2, zero_division=0)
         val_recall = recall_score(y_val, y_val_pred, pos_label=2, zero_division=0)
@@ -292,7 +285,6 @@ def train_classification_nn(X_train, X_val, X_test, y_train, y_val, y_test):
         test_f1 = f1_score(y_test, y_test_pred, pos_label=2, zero_division=0)
         test_roc_auc = roc_auc_score(y_test, y_test_proba)
         
-        # Log metrics
         mlflow.log_metric('val_accuracy', val_accuracy)
         mlflow.log_metric('val_precision', val_precision)
         mlflow.log_metric('val_recall', val_recall)
@@ -305,14 +297,11 @@ def train_classification_nn(X_train, X_val, X_test, y_train, y_val, y_test):
         mlflow.log_metric('test_f1_score', test_f1)
         mlflow.log_metric('test_roc_auc', test_roc_auc)
         
-        # Log training info
         mlflow.log_metric('n_iterations', mlp.n_iter_)
         mlflow.log_metric('n_layers', mlp.n_layers_)
         
-        # Save model to MLflow
         mlflow.sklearn.log_model(mlp, "model")
         
-        # Save loss curve for plotting
         loss_curve = mlp.loss_curve_
         with open(f'{PLOTS_FINAL_DIR}/classification_nn_loss_curve.pkl', 'wb') as f:
             pickle.dump(loss_curve, f)
@@ -348,15 +337,12 @@ def train_regression_nn(X_train, X_val, X_test, y_train, y_val, y_test):
     Train MLP regressor with early stopping and loss curve tracking.
     Architecture: Input -> 64 -> 32 -> 1 (linear)
     """
-    print("\n=== Training Regression Neural Network ===")
     
-    # Preprocess data
     X_train_prep, X_val_prep, X_test_prep, preprocessor = preprocess_for_linear_models(
         X_train, X_val, X_test
     )
     
     with mlflow.start_run(run_name="MLP_Regression"):
-        # Define MLP architecture
         mlp = MLPRegressor(
             hidden_layer_sizes=NN_HIDDEN_LAYERS,
             activation=NN_ACTIVATION,
@@ -373,7 +359,6 @@ def train_regression_nn(X_train, X_val, X_test, y_train, y_val, y_test):
             verbose=False
         )
         
-        # Log parameters
         mlflow.log_param('model_type', 'regression')
         mlflow.log_param('architecture', f'{NN_HIDDEN_LAYERS[0]}-{NN_HIDDEN_LAYERS[1]}-1')
         mlflow.log_param('activation', NN_ACTIVATION)
@@ -386,34 +371,27 @@ def train_regression_nn(X_train, X_val, X_test, y_train, y_val, y_test):
         mlflow.log_param('patience', NN_PATIENCE)
         mlflow.log_param('preprocessing', 'one_hot_encoding + scaling')
         
-        # Train
         mlp.fit(X_train_prep, y_train)
         
-        # Get predictions
         y_val_pred = mlp.predict(X_val_prep)
         y_test_pred = mlp.predict(X_test_prep)
         
-        # Calculate metrics
         val_mae = mean_absolute_error(y_val, y_val_pred)
         val_rmse = np.sqrt(mean_squared_error(y_val, y_val_pred))
         
         test_mae = mean_absolute_error(y_test, y_test_pred)
         test_rmse = np.sqrt(mean_squared_error(y_test, y_test_pred))
         
-        # Log metrics
         mlflow.log_metric('val_mae', val_mae)
         mlflow.log_metric('val_rmse', val_rmse)
         mlflow.log_metric('test_mae', test_mae)
         mlflow.log_metric('test_rmse', test_rmse)
         
-        # Log training info
         mlflow.log_metric('n_iterations', mlp.n_iter_)
         mlflow.log_metric('n_layers', mlp.n_layers_)
         
-        # Save model
         mlflow.sklearn.log_model(mlp, "model")
         
-        # Save loss curve for plotting
         loss_curve = mlp.loss_curve_
         with open(f'{PLOTS_FINAL_DIR}/regression_nn_loss_curve.pkl', 'wb') as f:
             pickle.dump(loss_curve, f)
@@ -437,11 +415,9 @@ def train_regression_nn(X_train, X_val, X_test, y_train, y_val, y_test):
 
 
 if __name__ == "__main__":
-    # Load data
     X, y, headers = load_raw_data()
     print(f"Loaded data: {X.shape[0]} samples, {X.shape[1]} features\n")
     
-    # Train classification NN
     print("=" * 60)
     print("CLASSIFICATION TASK")
     print("=" * 60)
@@ -450,7 +426,6 @@ if __name__ == "__main__":
         X_train, X_val, X_test, y_train, y_val, y_test
     )
     
-    # Train regression NN
     print("\n" + "=" * 60)
     print("REGRESSION TASK")
     print("=" * 60)

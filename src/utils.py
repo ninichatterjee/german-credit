@@ -87,7 +87,7 @@ def check_for_data_leakage(X_train, X_test, threshold=0.95):
     """Check for potential data leakage between train and test sets."""
     from sklearn.metrics.pairwise import cosine_similarity
     
-    # Sample if datasets are large
+     Sample if datasets are large
     n_samples = min(100, len(X_train), len(X_test))
     
     if hasattr(X_train, 'toarray'):  # Handle sparse matrices
@@ -97,7 +97,6 @@ def check_for_data_leakage(X_train, X_test, threshold=0.95):
         X_train_sample = X_train[:n_samples]
         X_test_sample = X_test[:n_samples]
     
-    # Calculate similarity
     similarities = cosine_similarity(X_test_sample, X_train_sample)
     max_similarities = similarities.max(axis=1)
     

@@ -300,11 +300,9 @@ if __name__ == "__main__":
 
 
 if __name__ == "__main__":
-    # Load data
     X, y, headers = load_raw_data()
     print(f"Loaded data: {X.shape[0]} samples, {X.shape[1]} features")
     
-    # Train classification models
     print("\n" + "="*60)
     print("CLASSIFICATION TASK")
     print("="*60)
@@ -313,7 +311,6 @@ if __name__ == "__main__":
         X_train, X_val, X_test, y_train, y_val, y_test
     )
     
-    # Train regression models
     print("\n" + "="*60)
     print("REGRESSION TASK")
     print("="*60)

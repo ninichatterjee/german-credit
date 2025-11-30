@@ -274,14 +274,12 @@ def plot_nn_learning_curves(save_path_clf=f'{PLOTS_FINAL_DIR}/plot1_classificati
     Plot 1 & 2: Learning curves for classification and regression neural networks.
     Shows training loss over epochs to monitor overfitting.
     """
-    # Load saved loss curves
     with open(f'{PLOTS_FINAL_DIR}/classification_nn_loss_curve.pkl', 'rb') as f:
         clf_loss = pickle.load(f)
     
     with open(f'{PLOTS_FINAL_DIR}/regression_nn_loss_curve.pkl', 'rb') as f:
         reg_loss = pickle.load(f)
     
-    # Handle both TensorFlow history (dict) and sklearn loss_curve_ (list)
     if isinstance(clf_loss, dict):
         clf_train_loss = clf_loss['loss']
         clf_val_loss = clf_loss.get('val_loss', None)
@@ -289,7 +287,6 @@ def plot_nn_learning_curves(save_path_clf=f'{PLOTS_FINAL_DIR}/plot1_classificati
         clf_train_loss = clf_loss
         clf_val_loss = None
     
-    # Plot 1: Classification NN
     fig, ax = plt.subplots(figsize=(10, 6))
     epochs = range(1, len(clf_train_loss) + 1)
     ax.plot(epochs, clf_train_loss, 'b-', linewidth=2, label='Training Loss')
@@ -305,7 +302,6 @@ def plot_nn_learning_curves(save_path_clf=f'{PLOTS_FINAL_DIR}/plot1_classificati
     plt.close()
     print(f"Classification NN learning curve saved to {save_path_clf}")
     
-    # Handle regression loss (could be dict or list)
     if isinstance(reg_loss, dict):
         reg_train_loss = reg_loss['loss']
         reg_val_loss = reg_loss.get('val_loss', None)
@@ -313,7 +309,6 @@ def plot_nn_learning_curves(save_path_clf=f'{PLOTS_FINAL_DIR}/plot1_classificati
         reg_train_loss = reg_loss
         reg_val_loss = None
     
-    # Plot 2: Regression NN
     fig, ax = plt.subplots(figsize=(10, 6))
     epochs = range(1, len(reg_train_loss) + 1)
     ax.plot(epochs, reg_train_loss, 'r-', linewidth=2, label='Training Loss')
@@ -332,37 +327,46 @@ def plot_nn_learning_curves(save_path_clf=f'{PLOTS_FINAL_DIR}/plot1_classificati
 
 def plot_best_classification_confusion_matrix(save_path=f'{PLOTS_FINAL_DIR}/plot3_confusion_matrix_best_model.png'):
     """
-    Plot 3: Confusion matrix for best classification model on test set.
-    Loads the trained model from MLflow (which uses SMOTE).
+    Plot 3: Confusion matrix for the neural network model with specified parameters.
+    Loads the model from MLflow.
     """
-    from sklearn.metrics import accuracy_score, f1_score
+    from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, ConfusionMatrixDisplay
     import mlflow
+    import matplotlib.pyplot as plt
     
     X, y, headers = load_raw_data()
     X_train, X_val, X_test, y_train, y_val, y_test = split_data_classification(X, y)
     X_train_prep, X_val_prep, X_test_prep, prep = preprocess_for_linear_models(X_train, X_val, X_test)
     
-    # Load the Neural Network model from MLflow (trained with SMOTE)
     try:
-        # Get the latest run from the NN experiment
+        # Search for runs with our specific parameters
         mlflow.set_experiment("german-credit-neural-networks")
-        runs = mlflow.search_runs(filter_string="tags.mlflow.runName = 'MLP_Classification'", 
-                                   order_by=["start_time DESC"], max_results=1)
+        runs = mlflow.search_runs(
+            filter_string="tags.mlflow.runName = 'TF_MLP_Classification' and params.dropout_rate = '0.1' and params.l2_lambda = '0.01'",
+            order_by=["start_time DESC"], 
+            max_results=1
+        )
         
         if len(runs) > 0:
             run_id = runs.iloc[0]['run_id']
             model_uri = f"runs:/{run_id}/model"
-            nn_model = mlflow.sklearn.load_model(model_uri)
-            nn_pred = nn_model.predict(X_test_prep)
+            
+            import tensorflow as tf
+            import mlflow.keras
+            
+            nn_model = mlflow.keras.load_model(model_uri)
+            
+            y_pred_proba = nn_model.predict(X_test_prep)
+            nn_pred = (y_pred_proba > 0.5).astype(int) + 1
+            
             nn_f1 = f1_score(y_test, nn_pred, average='weighted')
-            best_model_name = 'Neural Network'
+            best_model_name = 'Neural Network (TF)'
             best_pred = nn_pred
             best_f1 = nn_f1
             print(f"Loaded NN model from MLflow run: {run_id}")
         else:
             raise Exception("No MLflow run found")
     except Exception as e:
-        # Fallback: train without SMOTE if model not found
         print(f"Warning: Could not load model from MLflow ({e}). Training new model without SMOTE.")
         from sklearn.neural_network import MLPClassifier
         from config import NN_HIDDEN_LAYERS, NN_ACTIVATION, NN_SOLVER, NN_LEARNING_RATE, NN_BATCH_SIZE, NN_ALPHA, NN_MAX_ITER, NN_EARLY_STOPPING, NN_VALIDATION_FRACTION, NN_PATIENCE, RANDOM_SEED
@@ -378,7 +382,6 @@ def plot_best_classification_confusion_matrix(save_path=f'{PLOTS_FINAL_DIR}/plot
         best_pred = nn_pred
         best_f1 = nn_f1
     
-    # Select best model
     lr_model = LogisticRegression(C=1.0, penalty='l1', solver='liblinear', max_iter=1000, 
                                    class_weight='balanced', random_state=42)
     lr_model.fit(X_train_prep, y_train)
@@ -394,7 +397,6 @@ def plot_best_classification_confusion_matrix(save_path=f'{PLOTS_FINAL_DIR}/plot
         best_pred = lr_pred
         best_f1 = lr_f1
     
-    # Plot confusion matrix
     cm = confusion_matrix(y_test, best_pred)
     accuracy = accuracy_score(y_test, best_pred)
     precision = precision_score(y_test, best_pred, pos_label=2, zero_division=0)
@@ -433,27 +435,23 @@ def plot_best_regression_residuals(save_path=f'{PLOTS_FINAL_DIR}/plot4_residuals
     from sklearn.metrics import mean_absolute_error, mean_squared_error
     import numpy as np
 
-    # Load data
     X, y, headers = load_raw_data()
     X_train, X_val, X_test, y_train, y_val, y_test = split_data_regression(X, y)
     X_train_prep, X_val_prep, X_test_prep, prep = preprocess_for_linear_models(X_train, X_val, X_test)
 
-    # Load best model from MLflow
+    mlflow.set_tracking_uri('file:./mlruns')
     mlflow.set_tracking_uri('file:./mlruns')  # Ensure we're looking in the right place
     mlflow.set_experiment('german-credit-regression')
     
     try:
-        # Try to find the best run by test_mae
         best_run = mlflow.search_runs(
             order_by=['metrics.test_mae ASC'],
             max_results=1
         ).iloc[0]
         
-        # Load the model
         model_uri = f"runs:/{best_run.run_id}/model"
         model = mlflow.sklearn.load_model(model_uri)
         
-        # Get predictions
         best_pred = model.predict(X_test_prep)
         best_mae = mean_absolute_error(y_test, best_pred)
         best_model_name = best_run.tags.get('mlflow.runName', 'Best Regression Model')
@@ -468,11 +466,9 @@ def plot_best_regression_residuals(save_path=f'{PLOTS_FINAL_DIR}/plot4_residuals
         best_mae = mean_absolute_error(y_test, best_pred)
         best_model_name = 'Linear Regression (Fallback)'
     
-    # Calculate residuals
     residuals = y_test - best_pred
     rmse = np.sqrt(np.mean(residuals**2))
     
-    # Plot
     fig, ax = plt.subplots(figsize=(10, 6))
     ax.scatter(best_pred, residuals, alpha=0.6, edgecolors='k', s=60)
     ax.axhline(y=0, color='r', linestyle='--', linewidth=2, label='Zero Residual')
@@ -481,12 +477,10 @@ def plot_best_regression_residuals(save_path=f'{PLOTS_FINAL_DIR}/plot4_residuals
     ax.set_title(f'Residuals vs Predicted - {best_model_name} (Test Set)', fontsize=14, fontweight='bold', pad=15)
     ax.grid(True, alpha=0.3)
     
-    # Add trend line
     z = np.polyfit(best_pred, residuals, 1)
     p = np.poly1d(z)
     ax.plot(best_pred, p(best_pred), 'b--', alpha=0.8, linewidth=2)
     
-    # Add metrics text
     metrics_text = f'Best Model: {best_model_name}\n'
     metrics_text += f'MAE: {best_mae:.4f}\n'
     metrics_text += f'RMSE: {rmse:.4f}'
@@ -510,27 +504,23 @@ def plot_feature_importance(save_path=f'{PLOTS_FINAL_DIR}/plot5_feature_importan
     import mlflow
     import numpy as np
 
-    # Load data
     X, y, headers = load_raw_data()
     X_train, X_val, X_test, y_train, y_val, y_test = split_data_classification(X, y)
     X_train_prep, X_val_prep, X_test_prep, prep = preprocess_for_linear_models(X_train, X_val, X_test)
 
-    # Load best model from MLflow
+    mlflow.set_tracking_uri('file:./mlruns')
     mlflow.set_tracking_uri('file:./mlruns')  # Ensure we're looking in the right place
     mlflow.set_experiment('german-credit-classification')
     
     try:
-        # Try to find the best run by test_f1_score
         best_run = mlflow.search_runs(
             order_by=['metrics.test_f1_score DESC'],
             max_results=1
         ).iloc[0]
         
-        # Load the model
         model_uri = f"runs:/{best_run.run_id}/model"
         model = mlflow.sklearn.load_model(model_uri)
         
-        # Get model name for the plot title
         model_name = best_run.tags.get('mlflow.runName', 'Best Model')
         
     except Exception as e:
@@ -542,7 +532,6 @@ def plot_feature_importance(save_path=f'{PLOTS_FINAL_DIR}/plot5_feature_importan
         model.fit(X_train_prep, y_train)
         model_name = 'Logistic Regression (Fallback)'
     
-    # Calculate permutation importance on test set
     try:
         perm_importance = permutation_importance(model, X_test_prep, y_test, n_repeats=10, random_state=42)
     except Exception as e:
@@ -557,24 +546,20 @@ def plot_feature_importance(save_path=f'{PLOTS_FINAL_DIR}/plot5_feature_importan
             print("No feature importance available for this model type.")
             return
     
-    # Get feature names (after one-hot encoding)
     feature_names = []
     numeric_indices = [1, 4, 7, 10, 12, 15, 17]
     for idx in numeric_indices:
         feature_names.append(headers[idx])
     
-    # Add one-hot encoded categorical features
     categorical_indices = [0, 2, 3, 5, 6, 8, 9, 11, 13, 14, 16, 18, 19]
     for idx in categorical_indices:
         n_categories = len(np.unique(X[:, idx])) - 1  # -1 because of drop='first'
         for i in range(n_categories):
             feature_names.append(f"{headers[idx]}_{i+1}")
     
-    # Sort by importance
     importance_means = perm_importance.importances_mean
     indices = np.argsort(importance_means)[::-1][:15]  # Top 15 features
     
-    # Plot
     fig, ax = plt.subplots(figsize=(10, 8))
     top_features = [feature_names[i] if i < len(feature_names) else f'Feature_{i}' for i in indices]
     top_importances = importance_means[indices]
@@ -621,7 +606,6 @@ def generate_final_plots():
     print("GENERATING FINAL REPORT PLOTS")
     print("="*60 + "\n")
     
-    # Create directory if it doesn't exist
     os.makedirs(PLOTS_FINAL_DIR, exist_ok=True)
     
     print("Generating Plot 1 & 2: Neural Network Learning Curves...")
@@ -656,18 +640,14 @@ def evaluate_with_cross_validation():
     print("CROSS-VALIDATION EVALUATION")
     print("=" * 60)
     
-    # Load data
     X, y, headers = load_raw_data()
     X_train, X_val, X_test, y_train, y_val, y_test = split_data_classification(X, y)
     
-    # Combine train + val for CV
     X_combined = np.vstack([X_train, X_val])
     y_combined = np.concatenate([y_train, y_val])
     
-    # Preprocess
     X_prep, _, _, _ = preprocess_for_linear_models(X_combined, X_test, X_test)
     
-    # Define models
     from config import (
         RANDOM_SEED, NN_HIDDEN_LAYERS, NN_LEARNING_RATE, 
         NN_ALPHA, NN_BATCH_SIZE
@@ -689,10 +669,8 @@ def evaluate_with_cross_validation():
         )
     }
     
-    # Metrics to evaluate
     scoring = ['accuracy', 'precision', 'recall', 'f1', 'roc_auc']
     
-    # 5-fold stratified cross-validation
     cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=RANDOM_SEED)
     
     print("\nEvaluating models with 5-fold cross-validation...")
@@ -705,16 +683,13 @@ def evaluate_with_cross_validation():
         print(f"Model: {name}")
         print(f"{'='*60}")
         
-        # Create pipeline with SMOTE
         pipeline = ImbPipeline([
             ('smote', SMOTE(random_state=RANDOM_SEED)),
             ('classifier', model)
         ])
         
-        # Cross-validate
         results = cross_validate(pipeline, X_prep, y_combined, cv=cv, scoring=scoring)
         
-        # Store and print results
         cv_results[name] = {}
         for metric in scoring:
             scores = results[f'test_{metric}']
@@ -724,7 +699,6 @@ def evaluate_with_cross_validation():
             print(f"{metric:12s}: {mean_score:.4f} ± {std_score:.4f}")
         print()
     
-    # Summary
     print("=" * 60)
     print("SUMMARY: Best Model by Metric")
     print("=" * 60)
@@ -743,13 +717,10 @@ if __name__ == "__main__":
     import sys
     
     if len(sys.argv) > 1 and sys.argv[1] == '--final':
-        # Generate final report plots
         generate_final_plots()
     elif len(sys.argv) > 1 and sys.argv[1] == '--cv':
-        # Run cross-validation
         evaluate_with_cross_validation()
     else:
-        # Generate midpoint plots (original behavior)
         X, y, headers = load_raw_data()
         print(f"\nLoaded data: {X.shape[0]} samples, {X.shape[1]} features")
         

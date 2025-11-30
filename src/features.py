@@ -97,10 +97,7 @@ def preprocess_for_linear_models(X_train, X_val, X_test, add_interactions=False)
     X_val_prep = np.hstack([X_val_num_scaled, X_val_cat_encoded])
     X_test_prep = np.hstack([X_test_num_scaled, X_test_cat_encoded])
     
-    # Optionally add interaction features
     if add_interactions:
-        # Create simple interactions between important numerical features
-        # Duration (idx 1) × Credit Amount (idx 4) = Monthly payment burden
         train_interaction = X_train_num[:, 0] * X_train_num[:, 2]  # Duration × Credit
         val_interaction = X_val_num[:, 0] * X_val_num[:, 2]
         test_interaction = X_test_num[:, 0] * X_test_num[:, 2]

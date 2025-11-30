@@ -19,24 +19,16 @@ def generate_comparison_tables():
     print("GENERATING COMPARISON TABLES")
     print("="*60)
     
-    # Load data for evaluation
     X, y, headers = load_raw_data()
-    
-    # =====================
-    # TABLE 1: CLASSIFICATION
-    # =====================
-    print("\n--- Table 1: Classification Comparison ---")
     
     X_train, X_val, X_test, y_train, y_val, y_test = split_data_classification(X, y)
     X_train_prep, X_val_prep, X_test_prep, _ = preprocess_for_linear_models(X_train, X_val, X_test)
     
-    # Get latest MLflow runs for each model type
     mlflow.set_experiment("german-credit-baseline-models")
     lr_runs = mlflow.search_runs(filter_string="tags.mlflow.runName = 'Logistic_Regression'", 
                                   order_by=["start_time DESC"], max_results=1)
     
     mlflow.set_experiment("german-credit-neural-networks")
-    # Try to get TensorFlow run first, fall back to sklearn
     nn_runs = mlflow.search_runs(filter_string="tags.mlflow.runName = 'TF_MLP_Classification'", 
                                   order_by=["start_time DESC"], max_results=1)
     if len(nn_runs) == 0:
@@ -45,7 +37,6 @@ def generate_comparison_tables():
     
     classification_data = []
     
-    # Classical Model (Logistic Regression)
     if len(lr_runs) > 0:
         lr_metrics = {
             'Model': 'Logistic Regression',
@@ -58,7 +49,6 @@ def generate_comparison_tables():
         }
         classification_data.append(lr_metrics)
     
-    # Neural Network
     if len(nn_runs) > 0:
         nn_metrics = {
             'Model': 'Neural Network',
@@ -71,7 +61,6 @@ def generate_comparison_tables():
         }
         classification_data.append(nn_metrics)
     
-    # Create and save Table 1
     table1 = pd.DataFrame(classification_data)
     table1 = table1.round(4)
     table1.to_csv(f'{TABLES_FINAL_DIR}/table1_classification_comparison.csv', index=False)
@@ -79,14 +68,8 @@ def generate_comparison_tables():
     print("\nTable 1: Classification Comparison")
     print(table1.to_string(index=False))
     
-    # =====================
-    # TABLE 2: REGRESSION
-    # =====================
-    print("\n--- Table 2: Regression Comparison ---")
-    
     X_train, X_val, X_test, y_train, y_val, y_test = split_data_regression(X, y)
     
-    # Get latest MLflow runs for regression
     mlflow.set_experiment("german-credit-baseline-models")
     linreg_runs = mlflow.search_runs(filter_string="tags.mlflow.runName = 'Linear_Regression'", 
                                       order_by=["start_time DESC"], max_results=1)
@@ -97,7 +80,6 @@ def generate_comparison_tables():
     
     regression_data = []
     
-    # Classical Model (Linear Regression)
     if len(linreg_runs) > 0:
         linreg_metrics = {
             'Model': 'Linear Regression',
@@ -108,7 +90,6 @@ def generate_comparison_tables():
         }
         regression_data.append(linreg_metrics)
     
-    # Neural Network
     if len(nn_reg_runs) > 0:
         nn_reg_metrics = {
             'Model': 'Neural Network',
@@ -119,7 +100,6 @@ def generate_comparison_tables():
         }
         regression_data.append(nn_reg_metrics)
     
-    # Create and save Table 2
     table2 = pd.DataFrame(regression_data)
     table2 = table2.round(4)
     table2.to_csv(f'{TABLES_FINAL_DIR}/table2_regression_comparison.csv', index=False)
