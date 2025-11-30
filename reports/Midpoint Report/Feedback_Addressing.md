@@ -2,9 +2,7 @@
 
 ## 1. Class Balancing Implications (Plot 1)
 
-**Professor's Comment:** "You don't comment on the implications of resampling."
-
-**Our Analysis:** The target distribution plot shows our dataset has a 70:30 class imbalance (good:bad credit). While we used SMOTE to balance the classes to 50:50 for modeling, this has important implications:
+The target distribution plot shows our dataset has a 70:30 class imbalance (good:bad credit). While we used SMOTE to balance the classes to 50:50 for modeling, this has important implications:
 
 1. **Real-world Impact:**
 
@@ -23,8 +21,6 @@
    - The blue (good credit) class was oversampled to match the orange (bad credit) class
 
 ## 2. Feature Analysis (Correlation Heatmap & Boxplots)
-
-**Professor's Comment:** "Which variables have the strongest association with credit quality?"
 
 **Key Findings from Plots:**
 
@@ -53,8 +49,6 @@
 
 ## 3. Confusion Matrix Analysis
 
-**Professor's Comment:** "False negatives (bad credit predicted as good) are more costly."
-
 **Analysis of Current Performance:**
 
 1. **Cost Matrix Context:**
@@ -76,8 +70,6 @@
 
 ## 4. Residual Analysis
 
-**Professor's Comment:** "The residuals show mild heteroscedasticity."
-
 **Detailed Analysis:**
 
 1. **Heteroscedasticity Evidence:**
@@ -97,8 +89,6 @@
    - Explore non-linear models that can better capture the relationship
 
 ## 5. Model Performance Tables
-
-**Professor's Comment:** "Tables should be better formatted and round to two digits."
 
 ### Table 1: Classification Performance
 
@@ -124,8 +114,6 @@
 
 ## 6. Decision Tree Overfitting
 
-**Professor's Comment:** "Explain why Decision Trees overfit, not just that it does."
-
 **Root Causes:**
 
 1. **Small Dataset (n=1,000):**
@@ -149,8 +137,6 @@
 - Feature selection to reduce dimensionality
 
 ## 7. Neural Network Implementation
-
-**Professor's Comment:** "Use 64 and 32 units, batch normalization, dropout (0.2-0.3), and explain NN performance."
 
 **Our Response:** We've implemented the following architecture using TensorFlow/Keras:
 
@@ -203,14 +189,3 @@ The neural network achieves:
 **Conclusion:**
 While the neural network demonstrates the ability to learn the training data, its performance on the validation set suggests that the simpler Logistic Regression model is more suitable for this specific dataset, likely due to the limited number of samples (1000) and the tabular nature of the data.
 
-### Implementation Notes
-
-```markdown
-The original dataset shows a 70:30 ratio (good:bad credit), reflecting real-world 
-credit risk distribution. After SMOTE resampling, we achieve a 50:50 balance. While 
-this improves model sensitivity to the minority class (bad credit), it artificially 
-inflates the prevalence of risky borrowers. In deployment, this may lead to:
-- Higher false positive rates (rejecting creditworthy applicants)
-- Overestimation of portfolio risk
-- Need for threshold calibration to match business risk tolerance
-```
